@@ -42,9 +42,12 @@ export default function FavoriteStories() {
   const renderStoryCard = ({ item }) => (
     <View style={styles.storyCard}>
       <Image
-        source={{ uri: item.imageUrl || "https://cdn.pixabay.com/photo/2019/08/27/03/17/bird-skull-4433244_640.jpg" }}
-        style={styles.storyThumbnail}
-      />
+  source={{
+    uri: item.favoriteImage || "https://cdn.pixabay.com/photo/2019/08/27/03/17/bird-skull-4433244_640.jpg",
+  }}
+  style={styles.storyThumbnail}
+/>
+
       <View style={styles.storyDetails}>
         <Text style={styles.storyAuthor}>{item.username}</Text>
         <Text style={styles.storyExcerpt} numberOfLines={2}>

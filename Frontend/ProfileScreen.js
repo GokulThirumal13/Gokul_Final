@@ -1,18 +1,55 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Text, TextInput, StyleSheet, View, Image, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ProfileScreen = ({ navigation }) => {
-  const [name, setName] = useState("Gokul");
-  const [email, setEmail] = useState("gokulthirumal13@gmail.com");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [profilePic, setProfilePic] = useState("https://i.pinimg.com/736x/33/7a/f4/337af42c991a8e267f03a9bdce9fdd73.jpg");
   const [phone, setPhone] = useState("");
-  const [dob, setDob] = useState("");
+  const [age, setAge] = useState("");
   const [location, setLocation] = useState("");
   const [bio, setBio] = useState("");
 
-  const handleSave = () => {
-    alert("Profile Updated");
+  const loadProfileData = async () => {
+    try {
+      const storedName = await AsyncStorage.getItem("username");
+      const storedEmail = await AsyncStorage.getItem("userEmail");
+      const storedPhone = await AsyncStorage.getItem("userPhone");
+      const storedAge = await AsyncStorage.getItem("userAge");
+      const storedLocation = await AsyncStorage.getItem("userLocation");
+      const storedBio = await AsyncStorage.getItem("userBio");
+
+      if (storedName) setName(storedName);
+      if (storedEmail) setEmail(storedEmail);
+      if (storedPhone) setPhone(storedPhone);
+      if (storedAge) setAge(storedAge);
+      if (storedLocation) setLocation(storedLocation);
+      if (storedBio) setBio(storedBio);
+    } catch (error) {
+      console.error("Failed to load profile data:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await AsyncStorage.setItem("username", name);
+      await AsyncStorage.setItem("userEmail", email);
+      await AsyncStorage.setItem("userPhone", phone);
+      await AsyncStorage.setItem("userAge", age);
+      await AsyncStorage.setItem("userLocation", location);
+      await AsyncStorage.setItem("userBio", bio);
+
+      alert("Profile Updated ✅");
+      loadProfileData(); 
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+    }
   };
 
   const handleLogout = () => {
@@ -76,9 +113,10 @@ const ProfileScreen = ({ navigation }) => {
           <MaterialIcons name="calendar-today" size={24} color="gray" />
           <TextInput
             style={styles.input}
-            value={dob}
-            onChangeText={setDob}
-            placeholder="Date of Birth"
+            value={age}
+            onChangeText={setAge}
+            keyboardType="numeric"
+            placeholder="Age"
             placeholderTextColor="gray"
           />
         </View>
@@ -116,26 +154,33 @@ const ProfileScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#121212",
     padding: 20,
-    alignItems: "center",
-    paddingBottom: 50,
+    paddingBottom: 40,
+    backgroundColor: "#f5f5f5",
+    flexGrow: 1,
   },
   backButton: {
     position: "absolute",
     top: 40,
     left: 20,
+    backgroundColor: "#007AFF",
+    padding: 10,
+    borderRadius: 20,
     zIndex: 1,
   },
   logoutButton: {
     position: "absolute",
     top: 40,
     right: 20,
+    backgroundColor: "#FF3B30",
+    padding: 10,
+    borderRadius: 20,
     zIndex: 1,
   },
   profileImageContainer: {
-    marginTop: 70,
     alignItems: "center",
+    marginTop: 60,
+    marginBottom: 20,
   },
   profileImage: {
     width: 120,
@@ -145,41 +190,40 @@ const styles = StyleSheet.create({
   editIcon: {
     position: "absolute",
     bottom: 0,
-    right: 5,
-    backgroundColor: "purple",
+    right: 110,
+    backgroundColor: "#000",
+    padding: 6,
     borderRadius: 15,
-    padding: 5,
   },
   infoCard: {
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "white",
     padding: 20,
     borderRadius: 10,
-    width: "100%",
-    marginTop: 20,
+    elevation: 3,
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-    paddingBottom: 5,
   },
   input: {
     flex: 1,
-    color: "white",
-    fontSize: 16,
     marginLeft: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "gray",
+    paddingVertical: 5,
+    color: "#333",
   },
   saveButton: {
-    backgroundColor: "purple",
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: "#007AFF",
+    padding: 12,
+    borderRadius: 10,
     marginTop: 20,
+    alignItems: "center",
   },
   saveText: {
     color: "white",
-    textAlign: "center",
+    fontSize: 16,
     fontWeight: "bold",
   },
 });

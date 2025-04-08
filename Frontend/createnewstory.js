@@ -29,6 +29,14 @@ export default function NewStoryPrompt() {
     Educational: 'EXAVITQu4vr4xnSDxMaL', 
     };
 
+    const favoriteImageUrls = {
+        Horror: 'https://thumbs.dreamstime.com/b/pair-scared-children-sitting-bed-hiding-frightening-ghost-under-blanket-fearful-kids-imaginary-pair-scared-121266767.jpg',
+        Adventure: 'https://img.freepik.com/free-vector/scene-with-many-children-park_1308-43397.jpg',
+        Fantasy: 'https://img.freepik.com/free-vector/gradient-childrens-day-illustration_23-2149365424.jpg',
+        Comedy: 'https://www.shutterstock.com/image-vector/happy-little-boys-april-fools-600nw-1320331298.jpg',
+        Educational: 'https://static.vecteezy.com/system/resources/thumbnails/002/192/942/small_2x/education-children-concept-design-free-vector.jpg',
+    };
+
     useEffect(() => {
         async function fetchStoredData() {
             const savedUsername = await AsyncStorage.getItem('username');
@@ -173,14 +181,24 @@ export default function NewStoryPrompt() {
     const FavoriteToggle = async () => {
         const newFavoriteStatus = !isFavorite;
         setIsFavorite(newFavoriteStatus);
+    
         if (newFavoriteStatus && story !== '') {
+            const favoriteImage = favoriteImageUrls[category] || null;
+    
             try {
                 const response = await fetch('http://192.168.1.26:3001/favorite', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, story, isFavorite: newFavoriteStatus, audioUrl }),
+                    body: JSON.stringify({ 
+                        username, 
+                        story, 
+                        isFavorite: newFavoriteStatus, 
+                        audioUrl,
+                        category,
+                        favoriteImage 
+                    }),
                 });
-
+    
                 if (!response.ok) throw new Error(`Error: ${response.status} - ${response.statusText}`);
                 const data = await response.json();
                 console.log(data.message);
@@ -190,6 +208,7 @@ export default function NewStoryPrompt() {
             }
         }
     };
+    
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>

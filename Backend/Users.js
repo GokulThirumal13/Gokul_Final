@@ -47,7 +47,7 @@ app.get('/signup',async(req,res)=>{
 });
 app.post("/signup", async (req, res) => {
     try {
-        const { username, password, age } = req.body;
+        const { username, password, age, } = req.body;
         if (!username || !password || age === undefined) {
             return res.status(400).json({ message: "Username, password, and age are required" });
         }
@@ -123,13 +123,11 @@ app.delete("/story", async (req, res) => {
 });
 app.post("/favorite", async (req, res) => {
     try {
-        const { username, story, isFavorite ,audioUrl} = req.body;
-        if (!username || !story || typeof isFavorite !== 'boolean' || !audioUrl) {
-            return res.status(400).json({ message: "Username, story, audioUrl, and favorite status are required" });
+        const { username, story, isFavorite ,audioUrl,category,favoriteImage} = req.body;
+        if (!username || !story || typeof isFavorite !== 'boolean' || !audioUrl || !category ||!favoriteImage) {
+            return res.status(400).json({ message: "Username,story,audioUrl,favorite,status,category,favorite_image are required" });
         }
-
-        
-        await FavCollection.insertOne({ username, story, isFavorite, audioUrl,createdAt: new Date() });
+        await FavCollection.insertOne({ username, story, isFavorite, audioUrl,category,favoriteImage,createdAt: new Date() });
         res.status(201).json({ message: "Favorite status updated successfully" });
     } catch (error) {
         res.status(500).json({ message: "Failed to store favorite status", error: error.message });
@@ -147,7 +145,6 @@ app.get("/favorite", async (req, res) => {
         res.status(500).json({ message: "Failed to fetch favorite stories", error: error.message });
     }
 });
-
 app.post('/deduct-credits', async (req, res) => {
     const { username } = req.body;
     try {
@@ -225,7 +222,9 @@ app.post('/add-credits', async (req, res) => {
 
         return res.json({ success: true, message: "Credits updated successfully", newCredits });
     } catch (error) {
-        return res.status(500).json({ success: false, message: "Server error", error: error.message });
+        console.error("Error in /add-credits:", error);
+return res.status(500).json({ success: false, message: "Server error", error: error.message });
+
     }
 });
 

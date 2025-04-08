@@ -15,10 +15,17 @@ const LoginScreen = ({ navigation }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [age, setAge] = useState('');
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [age, setAge] = useState("");
+  const [location, setLocation] = useState("");
+  const [bio, setBio] = useState("Set your heart ablaze");
 
   const [storedUsername, setStoredUsername] = useState('');
   const [storedAge, setStoredAge] = useState('');
+  const [storedEmail,setStoredEmail]=useState('');
+  const[storedPhone,setstoredPhone]=useState('');
+  const[storedLocation,setstoredLocation]=useState('');
 
   const API_URL = 'http://192.168.1.26:3001';
 
@@ -49,16 +56,29 @@ const LoginScreen = ({ navigation }) => {
         if (isLogin) {
           await AsyncStorage.setItem('userAge', data.age.toString());
           await AsyncStorage.setItem('username', data.username);
-
+          await AsyncStorage.setItem('userEmail', data.email || email);
+          await AsyncStorage.setItem('userPhone', data.phone || phone);
+          await AsyncStorage.setItem('userLocation', data.location || location);
+          await AsyncStorage.setItem('userBio', data.bio || bio);
           setStoredUsername(data.username);
           setStoredAge(data.age.toString());
-
           navigation.navigate("pages");
         } else {
+          await AsyncStorage.setItem('username', username);
+          await AsyncStorage.setItem('userAge', age);
+          await AsyncStorage.setItem('userEmail', email);
+          await AsyncStorage.setItem('userPhone', phone);
+          await AsyncStorage.setItem('userLocation', location);
+          await AsyncStorage.setItem('userBio', bio);
+      
           setIsLogin(true);
           setUsername("");
           setPassword("");
           setAge("");
+          setEmail("");
+          setPhone("");
+          setLocation("");
+          setBio("Set your heart ablaze");
         }
       } else {
         Alert.alert('Error', data.message);
@@ -111,17 +131,48 @@ const LoginScreen = ({ navigation }) => {
         onChangeText={setPassword}
       />
 
-      {!isLogin && (
-        <TextInput
-          style={styles.input}
-          placeholder="Age"
-          placeholderTextColor="#aaa"
-          keyboardType="numeric"
-          value={age}
-          onChangeText={setAge}
-        />
-      )}
-
+{!isLogin && (
+  <>
+    <TextInput
+      style={styles.input}
+      placeholder="Age"
+      placeholderTextColor="#aaa"
+      keyboardType="numeric"
+      value={age}
+      onChangeText={setAge}
+    />
+    <TextInput
+      style={styles.input}
+      placeholder="Email"
+      placeholderTextColor="#aaa"
+      keyboardType="email-address"
+      value={email}
+      onChangeText={setEmail}
+    />
+    <TextInput
+      style={styles.input}
+      placeholder="Phone"
+      placeholderTextColor="#aaa"
+      keyboardType="phone-pad"
+      value={phone}
+      onChangeText={setPhone}
+    />
+    <TextInput
+      style={styles.input}
+      placeholder="Location"
+      placeholderTextColor="#aaa"
+      value={location}
+      onChangeText={setLocation}
+    />
+    <TextInput
+      style={styles.input}
+      placeholder="Bio"
+      placeholderTextColor="#aaa"
+      value={bio}
+      onChangeText={setBio}
+    />
+  </>
+)}
       {isLogin && (
         <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
           <Text style={styles.forgotPassword}>Forgot Password?</Text>

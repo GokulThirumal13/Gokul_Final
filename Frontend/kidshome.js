@@ -21,13 +21,40 @@ const KidsHomeScreen = ({ navigation }) => {
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
       <LinearGradient colors={["#121212", "#1A202C"]} style={styles.header}>
       <View style={styles.headerContent}>
-  <Text style={styles.appName}>StoryTime - Kids</Text>
-  
+  <View style={styles.headerTopRow}>
+    <Text style={styles.appName}>StoryTime - Kids</Text>
+    <View style={styles.iconRow}>
+      <TouchableOpacity onPress={() => navigation.navigate("profile")}>
+        <Ionicons name="person-circle-outline" size={28} color="white" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() =>
+          Alert.alert("Logout", "Are you sure you want to logout?", [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Logout",
+              onPress: () => navigation.replace("Login"),
+              style: "destructive",
+            },
+          ])
+        }
+        style={{ marginLeft: 15 }}
+      >
+        <Ionicons name="log-out-outline" size={24} color="white" />
+      </TouchableOpacity>
+    </View>
+  </View>
+
   <Text style={styles.kidsWelcome}>Enter the magical world of stories!</Text>
   <Text style={styles.kidsDescription}>
     Tap your favorite or discover a recent one to begin your journey!
   </Text>
 </View>
+
+{/* <Text style={styles.kidsWelcome}>Enter the magical world of stories!</Text>
+  <Text style={styles.kidsDescription}>
+    Tap your favorite or discover a recent one to begin your journey!
+  </Text> */}
       </LinearGradient>
 
       <View style={styles.tabBar}>
@@ -109,6 +136,17 @@ const styles = StyleSheet.create({
     padding: 10,
     marginHorizontal: 10,
   },
+  headerTopRow: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  iconRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  
   activeTab: {
     borderBottomWidth: 2,
     borderBottomColor: "purple",

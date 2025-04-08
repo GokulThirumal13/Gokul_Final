@@ -25,14 +25,14 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="CreateStory" component={NewStoryPrompt}/>
-      {/* <Stack.Screen name='sub' component={SubscriptionPage}/>
+      {/* <Stack.Screen name="CreateStory" component={NewStoryPrompt}/> */}
+       <Stack.Screen name='sub' component={SubscriptionPage}/>
       <Stack.Screen name="Login" component={LoginScreen}/>
         <Stack.Screen name='pages' component={ProfileSelection}/>
         <Stack.Screen name="khome" component={KidsHomeScreen}/>
         <Stack.Screen name='kids' component={KidsSection}/>
         <Stack.Screen name="CreateStory" component={NewStoryPrompt}/>
-        <Stack.Screen name="profile" component={ProfileScreen}/>  */}
+        <Stack.Screen name="profile" component={ProfileScreen}/>  
          {/* <Stack.Screen name="onboarding" component={Onboarding}/>
          <Stack.Screen name="Home" component={HomePage}/> 
          <Stack.Screen name="CreateStory" component={NewStoryPrompt}/>
