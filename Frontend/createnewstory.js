@@ -14,20 +14,11 @@ export default function NewStoryPrompt() {
     const [sound, setSound] = useState(null);
     const [credits, setCredits] = useState(100);
     const [isLoading,setLoading]=useState(false);
-    
-
+    const [isPlaying,setIsPlaying]=useState(false);
     const navigation = useNavigation();
     const route = useRoute();
-    const { category } = route.params || {};
+    const { category,  voiceId } = route.params || {};
 
-
-    const voiceMap = {
-        Horror: 'XrExE9yKIg1WjnnlVkGX', 
-    Adventure: 'MF3mGyEYCl7XYWbV9V6O',
-    Fantasy: 'ErXwobaYiN019PkySvjV',
-    Comedy: 'AZnzlk1XvdvUeBnXmlld',
-    Educational: 'EXAVITQu4vr4xnSDxMaL', 
-    };
 
     const favoriteImageUrls = {
         Horror: 'https://thumbs.dreamstime.com/b/pair-scared-children-sitting-bed-hiding-frightening-ghost-under-blanket-fearful-kids-imaginary-pair-scared-121266767.jpg',
@@ -84,14 +75,20 @@ export default function NewStoryPrompt() {
         setLoading(true);
 
         const ageAdjustedPrompt = `Generate a story suitable for a ${age}-year-old under category: ${category}. ${prompt}`;
-        const voiceId = voiceMap[category];
 
         try {
-            const response = await fetch("http://192.168.1.26:3000/generate-story", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt: ageAdjustedPrompt, voiceId }),
-            });
+            const response = await fetch('http://192.168.1.26:3000/generate-story',{
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  prompt: prompt,
+                  category,
+                  voiceId, 
+                }),
+              });
+              
 
             if (!response.ok) {
                 throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -155,28 +152,43 @@ export default function NewStoryPrompt() {
     };
 
     const AudioPlay = async () => {
-        if (!audioUrl) {
+        if (!audioUrl && !sound) {
             Alert.alert('Error', 'No audio available');
             return;
         }
+    
         try {
-            const { sound } = await Audio.Sound.createAsync(
-                { uri: audioUrl },
-                { shouldPlay: true }
-            );
-            setSound(sound);
-            await sound.playAsync();
-            sound.setOnPlaybackStatusUpdate(async (status) => {
-                if (status.didJustFinish) {
-                    await sound.unloadAsync();
-                    setSound(null);
+            if (sound) {
+                const status = await sound.getStatusAsync();
+                if (status.isPlaying) {
+                    await sound.pauseAsync();
+                    setIsPlaying(false);
+                } else {
+                    await sound.playAsync();
+                    setIsPlaying(true);
                 }
-            });
+            } else {
+                const { sound: newSound } = await Audio.Sound.createAsync(
+                    { uri: audioUrl },
+                    { shouldPlay: true }
+                );
+                setSound(newSound);
+                setIsPlaying(true);
+    
+                newSound.setOnPlaybackStatusUpdate(async (status) => {
+                    if (status.didJustFinish) {
+                        await newSound.unloadAsync();
+                        setSound(null);
+                        setIsPlaying(false);
+                    }
+                });
+            }
         } catch (error) {
-            console.error('Error playing audio:', error);
-            Alert.alert('Error', 'Failed to play audio');
+            console.error('Error playing/pausing audio:', error);
+            Alert.alert('Error', 'Audio playback failed');
         }
     };
+    
 
     const FavoriteToggle = async () => {
         const newFavoriteStatus = !isFavorite;
@@ -213,7 +225,7 @@ export default function NewStoryPrompt() {
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Ionicons name="arrow-back" size={28} color="red" />
+                <Ionicons name="arrow-back" size={28} color="#00A86B" />
             </TouchableOpacity>
 
             <View style={styles.creditsContainer}>
@@ -235,6 +247,9 @@ export default function NewStoryPrompt() {
                     placeholderTextColor="#777"
                 />
             </View>
+            <Text style={{ fontSize: 16, color: '#333', marginVertical: 10 }}>
+  Voice Selected: {voiceId}
+</Text>
 
             <TouchableOpacity
     style={[styles.button, isLoading && { backgroundColor: '#888' }]}
@@ -262,10 +277,11 @@ export default function NewStoryPrompt() {
 
             {audioUrl ? (
                 <TouchableOpacity style={styles.audioButton} onPress={AudioPlay}>
-                    <Text style={styles.buttonText}>Play Audio</Text>
-                </TouchableOpacity>
+                <Text style={styles.buttonText}>{isPlaying ? 'Pause Audio' : 'Play Audio'}</Text>
+            </TouchableOpacity>
+            
             ) : (
-                <Text style={{ fontSize: 20, textAlign: 'center', color: 'red' }}>No audio available</Text>
+                <Text style={{ fontSize: 20, textAlign: 'center', color: 'black' }}>No audio available</Text>
             )}
 
             <TouchableOpacity onPress={() => navigation.navigate("mq")}>
@@ -279,102 +295,106 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         marginTop:20,
-        padding: 16,
-        backgroundColor: '#121212'
+        backgroundColor: '#0D0D0D',
+        paddingHorizontal: 16,
+        paddingTop: 24,
     },
     contentContainer: {
-        paddingBottom: 40,
+        paddingBottom: 100,
     },
     title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: 'yellow',
+        fontSize: 22,
+        fontWeight: '600',
+        color: '#EAEAEA',
         textAlign: 'center',
-        marginVertical: 16,
+        marginVertical: 18,
     },
     card: {
-        backgroundColor: '#1E1E1E',
+        backgroundColor: '#1A1A1A',
         padding: 16,
-        borderRadius: 12,
+        borderRadius: 10,
         marginBottom: 16,
+        borderColor: '#2A2A2A',
         borderWidth: 1,
-        borderColor: '#333',
     },
     label: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#F0F0F0',
-        marginBottom: 8,
+        fontSize: 15,
+        fontWeight: '500',
+        color: '#CFCFCF',
+        marginBottom: 6,
     },
     textArea: {
-        backgroundColor: '#2B2B2B',
-        borderColor: '#444',
+        backgroundColor: '#262626',
+        borderColor: '#333',
         borderWidth: 1,
-        borderRadius: 10,
+        borderRadius: 8,
         padding: 12,
-        fontSize: 16,
-        color: '#fff',
+        fontSize: 15,
+        color: '#F2F2F2',
         textAlignVertical: 'top',
-        height: 90,
+        height: 100,
     },
     button: {
-        backgroundColor: 'red',
-        paddingVertical: 12,
-        borderRadius: 10,
+        backgroundColor: '#10A37F',
+        paddingVertical: 14,
+        borderRadius: 8,
         alignItems: 'center',
-        marginTop: 10,
+        marginVertical: 12,
     },
     buttonText: {
-        color: 'black',
+        color: 'white',
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
     storyCard: {
-        backgroundColor:'black',
+        backgroundColor: '#141414',
         padding: 16,
-        borderRadius: 12,
-        marginTop: 49,
-        borderColor: '#444',
+        borderRadius: 10,
+        marginTop: 30,
+        borderColor: '#333',
         borderWidth: 1,
     },
     storyTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#FAFAFA',
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#E0E0E0',
         marginBottom: 8,
     },
     storyText: {
-        fontSize: 15,
-        color: '#CCCCCC',
+        fontSize: 14,
+        color: '#C8C8C8',
+        lineHeight: 22,
     },
     favoriteButton: {
         alignSelf: 'flex-end',
-        marginTop: 10,
+        marginTop: 12,
     },
     audioButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#343434',
         paddingVertical: 12,
-        borderRadius: 10,
+        borderRadius: 8,
         alignItems: 'center',
         marginTop: 20,
+        borderWidth: 1,
+        borderColor: '#4CAF50',
     },
     creditsContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        backgroundColor: '#1E1E1E',
-        borderRadius: 10,
-        marginBottom: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        padding: 10,
+        borderRadius: 8,
+        backgroundColor: '#1F1F1F',
+        borderColor: '#2F2F2F',
         borderWidth: 1,
-        borderColor: '#444',
+        marginBottom: 16,
     },
     creditsText: {
-        color: "#FAFAFA",
+        color: '#B0F2B6',
         fontSize: 14,
-        fontWeight: "bold",
-        marginLeft: 6,
+        fontWeight: 'bold',
+        marginLeft: 8,
     }
 });
+
 

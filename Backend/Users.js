@@ -2,11 +2,11 @@ const{ MongoClient }=require("mongodb");
 const express=require("express");
 const cors=require("cors");
 const bcrypt=require("bcryptjs");
+const { ObjectId } = require("mongodb");
 const app=express();
 const port=3001;
 app.use(express.json());
 app.use(cors());
-
 const uri = "mongodb://127.0.0.1:27017";
 const client = new MongoClient(uri);
 async function connectDB() {
@@ -17,10 +17,7 @@ async function connectDB() {
         console.error("MongoDB Connection Error:", error);
     }
 }
-
 connectDB();
-
-
 const db=client.db('AI');
 const userCollection=db.collection('Users');
 const storyCollection=db.collection('Stories');
@@ -136,15 +133,33 @@ app.post("/favorite", async (req, res) => {
 
 app.get("/favorite", async (req, res) => {
     try {
-        const favorites = await FavCollection.find({ isFavorite: true })
-            .sort({ createdAt: -1 }) 
+        const { category } = req.query;
+
+        const filter = { isFavorite: true };
+        if (category) {
+            filter.category = category;
+        }
+
+        const favorites = await FavCollection.find(filter)
+            .sort({ createdAt: -1 })
             .toArray();
 
-        res.json(favorites); 
+        res.json(favorites);
     } catch (error) {
         res.status(500).json({ message: "Failed to fetch favorite stories", error: error.message });
     }
 });
+
+
+app.delete("/favorite/:id", async (req, res) => {
+    try {
+      const id=req.params.id;
+      await FavCollection.deleteOne({ _id:new ObjectId(id) });
+      res.status(200).json({ message: "Favorite deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete favorite", error: error.message });
+    }
+  });
 app.post('/deduct-credits', async (req, res) => {
     const { username } = req.body;
     try {
@@ -212,7 +227,6 @@ app.post('/add-credits', async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
-
         const newCredits = (user.credits || 0) + credits;
 
         await userCollection.updateOne(

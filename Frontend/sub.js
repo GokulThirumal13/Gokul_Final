@@ -48,7 +48,14 @@ const SubscriptionPage = ({ navigation }) => {
       case 0:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Welcome to CreditBoost!</Text>
+            {currentStep > 0 && (
+  <TouchableOpacity style={styles.prevBtn} onPress={() => setCurrentStep(currentStep - 1)}>
+    <Text style={styles.prevText}>Previous</Text>
+  </TouchableOpacity>
+)}
+
+
+            <Text style={styles.stepTitle}>Welcome to StoryTime</Text>
             <Text style={styles.stepText}>Earn and spend credits for premium services.</Text>
             <TouchableOpacity style={styles.nextBtn} onPress={() => setCurrentStep(1)}>
               <Text style={styles.nextText}>Next</Text>
@@ -108,11 +115,7 @@ const SubscriptionPage = ({ navigation }) => {
       
       {renderStepContent()}
 
-      <View style={styles.topRightIcon}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={28} color="red" />
-                    </TouchableOpacity>
-      </View>
+      
       
     </ScrollView>
   );
@@ -158,6 +161,18 @@ const styles = StyleSheet.create({
   perksContainer: {
     marginTop: 10,
   },
+  prevBtn: {
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+    backgroundColor: '#333',
+    padding: 10,
+    borderRadius: 8,
+  },
+  prevText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  
   perk: {
     color: '#ccc',
     fontSize: 14,

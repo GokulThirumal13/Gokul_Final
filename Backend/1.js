@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 const GROQ = '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';
-const ELEVENLABS = 'sk_d17b9dac32fe51c6cddf7c1d6989442b76e190e5bcc193e4';
+const ELEVENLABS = 'sk_1f4681f57de90c6cc6cc95f1bb9420241d409c7b50efacdb';
 const LLAMAMODEL = 'llama-3.1-8b-instant';
 
 const groq = new Groq({ apiKey: GROQ });
@@ -18,14 +18,6 @@ const audioDir = path.join(__dirname, 'audio');
 
 if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir);
 
-const CATEGORY_VOICE_MAP = {
-    Horror: 'XrExE9yKIg1WjnnlVkGX', 
-    Adventure: 'MF3mGyEYCl7XYWbV9V6O',
-    Fantasy: 'ErXwobaYiN019PkySvjV',
-    Comedy: 'AZnzlk1XvdvUeBnXmlld',
-    Educational: 'EXAVITQu4vr4xnSDxMaL',
-    default: 'nPczCjzI2devNBz1zQrb' 
-};
 
 app.post('/generate-story', async (req, res) => {
     const { prompt, category } = req.body;
@@ -33,7 +25,8 @@ app.post('/generate-story', async (req, res) => {
         return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    const voiceId = CATEGORY_VOICE_MAP[category?.toLowerCase()] || CATEGORY_VOICE_MAP.default;
+    const voiceId = req.body.voiceId ;
+
 
     try {
         const story = await getLlamaResponse(prompt);
@@ -116,6 +109,23 @@ app.get('/audio/:filename', (req, res) => {
 
     res.sendFile(filePath);
 });
+
+
+
+const ELEVENLABS_API_KEY = ELEVENLABS;
+
+fetch('https://api.elevenlabs.io/v1/voices', {
+    method: 'GET',
+    headers: {
+        'xi-api-key': ELEVENLABS_API_KEY
+    }
+})
+.then(res => res.json())
+.then(data => {
+    console.log(data.voices); 
+})
+.catch(err => console.error(err));
+
 
 const PORT = 3000;
 app.listen(PORT, () => {

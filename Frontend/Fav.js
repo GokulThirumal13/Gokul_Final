@@ -20,7 +20,6 @@ export default function FavoriteStories() {
   const [loading, setLoading] = useState(true);
 
   const { isPlaying, currentAudio, toggleAudio } = useAudioPlayer();
-
   useEffect(() => {
     loadFavoriteStories();
   }, []);
@@ -41,19 +40,27 @@ export default function FavoriteStories() {
 
   const renderStoryCard = ({ item }) => (
     <View style={styles.storyCard}>
-      <Image
-  source={{
-    uri: item.favoriteImage || "https://cdn.pixabay.com/photo/2019/08/27/03/17/bird-skull-4433244_640.jpg",
-  }}
-  style={styles.storyThumbnail}
-/>
-
+      <View style={styles.imageWrapper}>
+        <Image
+          source={{
+            uri: item.favoriteImage || "https://cdn.pixabay.com/photo/2019/08/27/03/17/bird-skull-4433244_640.jpg",
+          }}
+          style={styles.storyThumbnail}
+        />
+        <TouchableOpacity
+          style={styles.trashIcon}
+          onPress={() => handleDelete(item._id)}
+        >
+          <Ionicons name="trash" size={20} color="white" />
+        </TouchableOpacity>
+      </View>
+  
       <View style={styles.storyDetails}>
         <Text style={styles.storyAuthor}>{item.username}</Text>
         <Text style={styles.storyExcerpt} numberOfLines={2}>
           {item.story || "No story text available"}
         </Text>
-
+  
         {item.audioUrl ? (
           <TouchableOpacity
             style={styles.audioButton}
@@ -80,6 +87,33 @@ export default function FavoriteStories() {
       </View>
     </View>
   );
+  const handleDelete = async (id) => {
+    Alert.alert(
+      "Delete Favorite",
+      "Are you sure you want to delete this favorite?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const response = await fetch(`http://192.168.1.26:3001/favorite/${id}`, {
+                method: "DELETE",
+              });
+              if (!response.ok) throw new Error("Delete failed");
+              setFavoriteStories(prev => prev.filter(story => story._id !== id));
+            } catch (error) {
+              console.error("Error deleting favorite:", error);
+              Alert.alert("Failed to delete");
+            }
+          },
+        },
+      ]
+    );
+  };
+  
+  
 
   return (
     <View style={styles.container}>
@@ -154,6 +188,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
+  imageWrapper: {
+    position: "relative",
+  },
+  trashIcon: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 12,
+    padding: 4,
+  },
+  
   audioButton: {
     flexDirection: "row",
     alignItems: "center",
