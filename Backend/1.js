@@ -10,50 +10,60 @@ app.use(cors());
 app.use(express.json());
 
 const GROQ = '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';
-const ELEVENLABS = 'sk_1f4681f57de90c6cc6cc95f1bb9420241d409c7b50efacdb';
+const ELEVENLABS = 'sk_88ff2289e2dee89e695e901c3a22e3485da920de89387063';
 const LLAMAMODEL = 'llama-3.1-8b-instant';
-
 const groq = new Groq({ apiKey: GROQ });
 const audioDir = path.join(__dirname, 'audio');
-
 if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir);
-
-
 app.post('/generate-story', async (req, res) => {
-    const { prompt, category } = req.body;
+    let { prompt, category, lang, voiceId } = req.body;
+
     if (!prompt || prompt.trim() === '') {
         return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    const voiceId = req.body.voiceId ;
-
-
     try {
-        const story = await getLlamaResponse(prompt);
+        const fullPrompt = `Write a children's story in ${lang}. Category: ${category}. Prompt: ${prompt}`;
+        console.log("Full prompt:", fullPrompt);
+
+        const story = await getLlamaResponse(fullPrompt, lang);
+
         if (!story) {
             return res.status(500).json({ error: 'Failed to generate story' });
         }
 
         const audioFilename = `audio_${Date.now()}.mp3`;
         const audioUrl = await convertTextToSpeech(story, audioFilename, voiceId);
+        
         if (!audioUrl) {
             return res.status(500).json({ error: 'Failed to generate audio' });
         }
 
         res.json({ story, audioUrl });
+
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error in /generate-story:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-async function getLlamaResponse(prompt) {
+async function getLlamaResponse(prompt, lang = 'English') {
     try {
+        const systemPrompt = `
+You are a creative AI storyteller. Only respond in ${lang.toUpperCase()}.
+Do not include any English words unless absolutely necessary.
+Return your response strictly as a valid JSON object like this: { "story": "..." }.
+Do not use markdown, code blocks, or any formatting symbols like \`\`\`.
+Only respond with a clean JSON object and valid escaped characters.
+`;
+
+        const userPrompt = `${prompt}. Please write this story in pure ${lang}. Do not use English.`;
+
         const response = await groq.chat.completions.create({
             model: LLAMAMODEL,
             messages: [
-                { role: "system", content: "You're an AI story teller. Response should be in JSON format: { \"story\": \"\" }" },
-                { role: "user", content: prompt }
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
             ],
             temperature: 0.5,
             max_completion_tokens: 1024,
@@ -62,13 +72,29 @@ async function getLlamaResponse(prompt) {
             response_format: { type: "json_object" }
         });
 
-        const responseData = response.choices[0]?.message?.content;
+        let responseData = response.choices[0]?.message?.content;
+
+        console.log("LLM raw response:", responseData);
+
         if (!responseData) {
             console.error("Empty response from Groq API:", response);
             return null;
         }
-        const Response = JSON.parse(responseData);
-        return Response.story || null;
+
+        const jsonMatch = responseData.match(/{[\s\S]*}/);
+        if (!jsonMatch) {
+            console.error("Failed to extract JSON from response:", responseData);
+            return null;
+        }
+
+        try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            return parsed.story || null;
+        } catch (err) {
+            console.error("Failed to parse JSON:", err, "\nRaw response:", responseData);
+            return null;
+        }
+
     } catch (error) {
         console.error("Error in getLlamaResponse:", error);
         return null;
@@ -83,7 +109,12 @@ async function convertTextToSpeech(text, filename, voiceId) {
                 'Content-Type': 'application/json',
                 'xi-api-key': ELEVENLABS,
             },
-            body: JSON.stringify({ text })
+            body: JSON.stringify({
+                text,
+                voice_settings: {
+                    speed: 0.9 
+                }
+            })
         });
 
         if (!response.ok) {
@@ -94,7 +125,7 @@ async function convertTextToSpeech(text, filename, voiceId) {
         const filePath = path.join(audioDir, filename);
         fs.writeFileSync(filePath, Buffer.from(audioBuffer));
 
-        return `http://192.168.1.26:3000/audio/${filename}`;
+        return `http://192.168.221.244:3000/audio/${filename}`;
     } catch (error) {
         console.error('Error in convertTextToSpeech:', error);
         return null;
@@ -111,9 +142,7 @@ app.get('/audio/:filename', (req, res) => {
 });
 
 
-
 const ELEVENLABS_API_KEY = ELEVENLABS;
-
 fetch('https://api.elevenlabs.io/v1/voices', {
     method: 'GET',
     headers: {
@@ -122,12 +151,11 @@ fetch('https://api.elevenlabs.io/v1/voices', {
 })
 .then(res => res.json())
 .then(data => {
-    console.log(data.voices); 
+    console.log("Available ElevenLabs voices:", data.voices);
 })
 .catch(err => console.error(err));
 
-
 const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`✅ Server running at http://localhost:${PORT}`);
 });

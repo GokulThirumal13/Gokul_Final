@@ -1,18 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  Alert
+} from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons'; 
+import { Ionicons } from '@expo/vector-icons';
 
+const { width } = Dimensions.get('window');
 
 const plans = [
-  { name: 'Basic', amount: 49, credits: 100, perks: ['100 Credits'] },
-  { name: 'Standard', amount: 99, credits: 250, perks: ['250 Credits'] },
-  { name: 'Premium', amount: 199, credits: 600, perks: ['600 Credits'] },
+  {
+    name: 'Basic',
+    amount: 49,
+    credits: 100,
+    perks: [
+      '100 Credits',
+      'Access to Free Stories',
+      'Limited Downloads',
+      'Email Support',
+    ],
+  },
+  {
+    name: 'Standard',
+    amount: 99,
+    credits: 250,
+    perks: [
+      '250 Credits',
+      'Free + Premium Stories',
+      'Unlimited Downloads',
+      'Priority Support',
+      'Ad-Free Experience',
+    ],
+  },
+  {
+    name: 'Premium',
+    amount: 199,
+    credits: 600,
+    perks: [
+      '600 Credits',
+      'All Stories Access',
+      'Offline Mode',
+      '24/7 Support',
+      'Early Access + Bonuses',
+    ],
+  },
 ];
 
 const SubscriptionPage = ({ navigation }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+  const scrollRef = useRef(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [username, setUsername] = useState('');
 
@@ -22,13 +64,22 @@ const SubscriptionPage = ({ navigation }) => {
     });
   }, []);
 
+  const handleScroll = (event) => {
+    const index = Math.round(event.nativeEvent.contentOffset.x / width);
+    setCurrentIndex(index);
+  };
+
+  const goToSlide = (index) => {
+    scrollRef.current.scrollTo({ x: index * width, animated: true });
+  };
+
   const handleSubscribe = async () => {
     if (!selectedPlan || !username) {
       Alert.alert('Error', 'Please select a plan and ensure you are logged in.');
       return;
     }
     try {
-      const response = await axios.post('http://192.168.1.26:3001/add-credits', {
+      const response = await axios.post('http://192.168.221.244:3001/add-credits', {
         username,
         credits: selectedPlan.credits,
       });
@@ -43,168 +94,109 @@ const SubscriptionPage = ({ navigation }) => {
     }
   };
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <View style={styles.stepContainer}>
-            {currentStep > 0 && (
-  <TouchableOpacity style={styles.prevBtn} onPress={() => setCurrentStep(currentStep - 1)}>
-    <Text style={styles.prevText}>Previous</Text>
-  </TouchableOpacity>
-)}
-
-
-            <Text style={styles.stepTitle}>Welcome to StoryTime</Text>
-            <Text style={styles.stepText}>Earn and spend credits for premium services.</Text>
-            <TouchableOpacity style={styles.nextBtn} onPress={() => setCurrentStep(1)}>
-              <Text style={styles.nextText}>Next</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      case 1:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Why Upgrade?</Text>
-            <Text style={styles.stepText}>• Get more credits instantly</Text>
-            <Text style={styles.stepText}>• Unlock premium features</Text>
-            <Text style={styles.stepText}>• No hidden charges</Text>
-            <TouchableOpacity style={styles.nextBtn} onPress={() => setCurrentStep(2)}>
-              <Text style={styles.nextText}>View Plans</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      case 2:
-        return (
-          <>
-            <Text style={styles.title}>Choose Your Plan</Text>
-            {plans.map((plan, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.planCard,
-                  selectedPlan?.name === plan.name && styles.selectedCard,
-                ]}
-                onPress={() => setSelectedPlan(plan)}
-              >
-                <Text style={styles.planName}>{plan.name}</Text>
-                <Text style={styles.planPrice}>₹{plan.amount} / month</Text>
-                <View style={styles.perksContainer}>
-                  {plan.perks.map((perk, idx) => (
-                    <Text key={idx} style={styles.perk}>• {perk}</Text>
-                  ))}
-                </View>
-              </TouchableOpacity>
-            ))}
-            
-            <TouchableOpacity style={styles.subscribeBtn} onPress={handleSubscribe}>
-              <Text style={styles.subscribeText}>
-                {selectedPlan ? `Subscribe to ${selectedPlan.name}` : 'Select a Plan'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.loginText}>Back to Login</Text>
-            </TouchableOpacity>
-          </>
-        );
-    }
-  };
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      
-      {renderStepContent()}
+    <View style={styles.container}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        ref={scrollRef}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsHorizontalScrollIndicator={false}
+      >
+        {/* Step 1 */}
+        <View style={styles.slide}>
+          <Text style={styles.stepTitle}>Welcome to StoryTime</Text>
+          <Text style={styles.stepText}>Earn and spend credits for premium services.</Text>
+        </View>
 
-      
-      
-    </ScrollView>
+        {/* Step 2 */}
+        <View style={styles.slide}>
+          <Text style={styles.stepTitle}>Why Upgrade?</Text>
+          <Text style={styles.stepText}>✓ Get more credits instantly</Text>
+          <Text style={styles.stepText}>✓ Unlock premium features</Text>
+          <Text style={styles.stepText}>✓ No hidden charges</Text>
+        </View>
+
+        {/* Step 3 - Plans */}
+        <View style={styles.slide}>
+  <ScrollView
+    style={{ width: '100%' }}
+    contentContainerStyle={styles.planContainer}
+    showsVerticalScrollIndicator={false}
+  >
+    <Text style={styles.title}>Choose Your Plan</Text>
+
+    {plans.map((plan, index) => (
+      <TouchableOpacity
+        key={index}
+        style={[
+          styles.planCard,
+          selectedPlan?.name === plan.name && styles.selectedCard,
+        ]}
+        onPress={() => setSelectedPlan(plan)}
+      >
+        <Text style={styles.planName}>{plan.name}</Text>
+        <Text style={styles.planPrice}>₹{plan.amount} / month</Text>
+        {plan.perks.map((perk, idx) => (
+          <View key={idx} style={styles.perkRow}>
+            <Ionicons name="checkmark-circle-outline" size={18} color="#0f0" />
+            <Text style={styles.perkText}>{perk}</Text>
+          </View>
+        ))}
+      </TouchableOpacity>
+    ))}
+
+    <TouchableOpacity
+      style={[styles.subscribeBtn, !selectedPlan && { backgroundColor: '#555' }]}
+      onPress={handleSubscribe}
+      disabled={!selectedPlan}
+    >
+      <Text style={styles.subscribeText}>
+        {selectedPlan ? `Subscribe to ${selectedPlan.name}` : 'Select a Plan'}
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+      <Text style={styles.loginText}>Back to Login</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity style={styles.prevBtn} onPress={() => goToSlide(1)}>
+      <Text style={styles.prevText}>Previous</Text>
+    </TouchableOpacity>
+  </ScrollView>
+</View>
+
+
+      </ScrollView>
+
+      {/* Navigation buttons */}
+      <View style={styles.navigation}>
+        {currentIndex > 0 && (
+          <TouchableOpacity style={styles.navBtn} onPress={() => goToSlide(currentIndex - 1)}>
+            <Text style={styles.navText}>◀ Prev</Text>
+          </TouchableOpacity>
+        )}
+        {currentIndex < 2 && (
+          <TouchableOpacity style={styles.navBtn} onPress={() => goToSlide(currentIndex + 1)}>
+            <Text style={styles.navText}>Next ▶</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    flex: 1,
     backgroundColor: '#0f1115',
-    flexGrow: 1,
-    alignItems: 'center',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 25,
-  },
-  planCard: {
-    backgroundColor: '#1c1f26',
+  slide: {
+    width,
+    marginTop:50,
     padding: 25,
-    borderRadius: 15,
-    marginBottom: 20,
-    width: '100%',
-    borderColor: '#444',
-    borderWidth: 2,
-  },
-  selectedCard: {
-    borderColor: '#e50914',
-    backgroundColor: '#2c2f36',
-  },
-  planName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  planPrice: {
-    fontSize: 18,
-    color: '#bbb',
-    marginTop: 5,
-  },
-  perksContainer: {
-    marginTop: 10,
-  },
-  prevBtn: {
-    alignSelf: 'flex-start',
-    marginBottom: 10,
-    backgroundColor: '#333',
-    padding: 10,
-    borderRadius: 8,
-  },
-  prevText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  
-  perk: {
-    color: '#ccc',
-    fontSize: 14,
-    marginVertical: 2,
-  },
-  topRightIcon: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 10,
-  },
-  
-  subscribeBtn: {
-    backgroundColor: '#e50914',
-    padding: 15,
-    borderRadius: 10,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 30,
-  },
-  subscribeText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  loginText: {
-    marginTop: 20,
-    color: '#999',
-    textDecorationLine: 'underline',
-  },
-  stepContainer: {
-    padding: 30,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   stepTitle: {
@@ -219,20 +211,94 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
-  nextBtn: {
-    marginTop: 30,
-    backgroundColor: '#e50914',
-    padding: 15,
-    borderRadius: 10,
-    width: '80%',
-    alignItems: 'center',
-  },
-  nextText: {
-    color: '#fff',
-    fontSize: 18,
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 20,
+  },
+  planCard: {
+    backgroundColor: '#1c1f26',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+    width: '100%',
+    borderWidth: 2,
+    borderColor: '#444',
+  },
+  selectedCard: {
+    borderColor: '#e50914',
+    backgroundColor: '#2c2f36',
+  },
+  planName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  planPrice: {
+    fontSize: 16,
+    color: '#bbb',
+    marginTop: 4,
+  },
+  perkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  loginText: {
+    marginTop: 12,
+    color: '#bbb',
+    fontSize: 14,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
   
+  prevBtn: {
+    marginTop: 10,
+    backgroundColor: '#333',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+  },
+  
+  prevText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  
+  perkText: {
+    color: '#ccc',
+    marginLeft: 6,
+  },
+  subscribeBtn: {
+    backgroundColor: '#e50914',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  subscribeText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  navigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 25,
+    paddingBottom: 20,
+  },
+  navBtn: {
+    padding: 10,
+    backgroundColor: '#222',
+    borderRadius: 8,
+  },
+  navText: {
+    color: '#fff',
+    fontSize: 16,
+  },
 });
 
 export default SubscriptionPage;

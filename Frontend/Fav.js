@@ -1,19 +1,9 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  FlatList,
-  Alert,
-  ActivityIndicator,
-  TouchableOpacity,
-  Dimensions,
-} from "react-native";
+import {View,Text,Image,StyleSheet,FlatList,Alert,ActivityIndicator,TouchableOpacity,Dimensions,} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import useAudioPlayer from "./useAudioPlayer";
-
 const CARD_WIDTH = (Dimensions.get("window").width - 60) / 2;
+const SPOTIFY_GREEN = "#1DB954";
 
 export default function FavoriteStories() {
   const [favoriteStories, setFavoriteStories] = useState([]);
@@ -26,7 +16,7 @@ export default function FavoriteStories() {
 
   const loadFavoriteStories = async () => {
     try {
-      const response = await fetch("http://192.168.1.26:3001/favorite");
+      const response = await fetch("http://192.168.221.244:3001/favorite");
       if (!response.ok) throw new Error("Failed to fetch favorite stories");
       const data = await response.json();
       setFavoriteStories(data);
@@ -63,24 +53,42 @@ export default function FavoriteStories() {
   
         {item.audioUrl ? (
           <TouchableOpacity
-            style={styles.audioButton}
-            onPress={() => toggleAudio(item.audioUrl)}
-          >
-            <Ionicons
-              name={
-                isPlaying && currentAudio === item.audioUrl
-                  ? "pause-circle"
-                  : "play-circle"
-              }
-              size={24}
-              color="white"
+          style={styles.audioButton}
+          onPress={() => toggleAudio(item.audioUrl)}
+        >
+          <Ionicons
+            name={
+              isPlaying && currentAudio === item.audioUrl
+                ? "pause-circle"
+                : "play-circle"
+            }
+            size={26}
+            color={
+              isPlaying && currentAudio === item.audioUrl
+                ? SPOTIFY_GREEN
+                : "white"
+            }
+          />
+          <Text style={styles.audioText}>
+            {isPlaying && currentAudio === item.audioUrl
+              ? "Pause Audio"
+              : "Play Audio"}
+          </Text>
+        
+          {/* Add green dot indicator */}
+          {isPlaying && currentAudio === item.audioUrl && (
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                backgroundColor: SPOTIFY_GREEN,
+                borderRadius: 4,
+                marginLeft: 8,
+              }}
             />
-            <Text style={styles.audioText}>
-              {isPlaying && currentAudio === item.audioUrl
-                ? "Pause Audio"
-                : "Play Audio"}
-            </Text>
-          </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+        
         ) : (
           <Text style={styles.noAudioText}>No audio available</Text>
         )}
@@ -98,7 +106,7 @@ export default function FavoriteStories() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`http://192.168.1.26:3001/favorite/${id}`, {
+              const response = await fetch(`http://192.168.221.244:3001/favorite/${id}`, {
                 method: "DELETE",
               });
               if (!response.ok) throw new Error("Delete failed");
@@ -141,78 +149,84 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#121212",
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
     paddingTop: 20,
   },
   title: {
     color: "white",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 20,
     alignSelf: "center",
   },
   listContainer: {
-    paddingBottom: 20,
+    paddingBottom: 30,
   },
   row: {
     justifyContent: "space-between",
-    marginBottom: 15,
+    marginBottom: 20,
   },
   storyCard: {
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "#181818",
     width: CARD_WIDTH,
-    borderRadius: 12,
-    padding: 10,
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
   },
   storyThumbnail: {
     width: "100%",
-    height: 100,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  storyDetails: {
-    flex: 1,
-  },
-  storyAuthor: {
-    color: "white",
-    fontWeight: "bold",
-    marginBottom: 4,
-  },
-  storyExcerpt: {
-    color: "gray",
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  noFavoritesText: {
-    color: "gray",
-    textAlign: "center",
-    marginTop: 20,
+    height: 120,
+    borderRadius: 12,
+    marginBottom: 10,
   },
   imageWrapper: {
     position: "relative",
   },
   trashIcon: {
     position: "absolute",
-    top: 6,
-    right: 6,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    borderRadius: 12,
-    padding: 4,
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 16,
+    padding: 6,
   },
-  
+  storyDetails: {
+    flex: 1,
+  },
+  storyAuthor: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  storyExcerpt: {
+    color: "#ccc",
+    fontSize: 12,
+    marginBottom: 8,
+  },
   audioButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 6,
   },
   audioText: {
-    color: "white",
+    color: SPOTIFY_GREEN,
     marginLeft: 6,
     fontSize: 13,
+    fontWeight: "600",
   },
   noAudioText: {
     color: "gray",
     fontStyle: "italic",
     fontSize: 12,
+  },
+  noFavoritesText: {
+    color: "gray",
+    textAlign: "center",
+    marginTop: 40,
+    fontSize: 14,
   },
 });

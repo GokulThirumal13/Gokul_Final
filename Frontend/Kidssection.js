@@ -3,11 +3,12 @@ import {View,Text,TouchableOpacity,StyleSheet,Modal,Alert,ScrollView,FlatList,Im
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import Icon from 'react-native-vector-icons/Ionicons';
+
 import { LinearGradient } from "expo-linear-gradient";
 // import { Picker } from "@react-native-picker/picker";
 const categories = ["Horror", "Adventure", "Fantasy", "Comedy", "Educational"];
-const Voices=['Daniel','Brian', 'Lily', 'Eric','Jessica']
-
+const Voices=['Daniel','Brian', 'Lily', 'Eric','Jessica'];
+const Languages=['English','Tamil', 'Hindi'];
 const CategoryDetails={
   Horror:{
     avatar:"https://e7.pngegg.com/pngimages/581/432/png-clipart-zombie-animated-illustration-t-shirt-drawing-ferocious-masks-avatar-heroes-head-thumbnail.png"
@@ -68,6 +69,9 @@ const KidsSection = ({ navigation }) => {
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const [isVoiceModalVisible, setVoiceModalVisible] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
+
   const [favoriteStories,setFavoriteStories]=useState([]);
 
   useEffect(() => {
@@ -86,7 +90,7 @@ const KidsSection = ({ navigation }) => {
       if (!selectedCategory) return;
   
       try {
-        const response = await fetch(`http://192.168.1.26:3001/favorite?category=${selectedCategory}`);
+        const response = await fetch(`http://192.168.221.244:3001/favorite?category=${selectedCategory}`);
         const data = await response.json();
         setFavoriteStories(data);
       } catch (error) {
@@ -113,28 +117,39 @@ const KidsSection = ({ navigation }) => {
   const resetSelections=()=>{
     setSelectedCategory(null);
     setSelectedVoice(null);
+    setSelectedLanguage(null);
     setFavoriteStories([]);
   };
   
 
   return (
-    <ScrollView style={styles.container}>
+
+
+<View style={styles.container}>
+<View style={styles.topBar}>
+  <TouchableOpacity onPress={() => navigation.navigate("profile")}>
+    <Ionicons name="person-circle-outline" size={28} color="white" style={styles.iconSpacing} />
+  </TouchableOpacity>
+
+  <Text style={styles.topBarTitle}>Kids Section</Text>
+
+  <TouchableOpacity onPress={handleLogout}>
+    <Ionicons name="log-out-outline" size={28} color="white" />
+  </TouchableOpacity>
+</View>
+
+    <ScrollView >
+      
     <LinearGradient
   colors={['#d6ccf2', '#bfa2db', '#8367c7', '#5e60ce']}
   start={{ x: 0, y: 0 }}
   end={{ x: 1, y: 1 }}
   style={styles.background}
 />
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.navigate("profile")}>
-          <Ionicons name="person-circle-outline" size={28} color="black" style={styles.iconSpacing} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={28} color="black" />
-        </TouchableOpacity>
-      </View>
+
+
       <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={28} color="black" />
+        <Ionicons name="arrow-back" size={28} color="#00A86B"/>
       </TouchableOpacity>
 
       <Image
@@ -152,8 +167,17 @@ const KidsSection = ({ navigation }) => {
         <Text style={styles.recentText}>Recently Played</Text>
       </TouchableOpacity> */}
 
-      <View style={styles.pickerContainer}>
-        <Text style={styles.pickerLabel}>Select Category:</Text>
+<View style={styles.pickerContainer}>
+  <View style={{ 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
+  }}>
+    <Text style={styles.pickerLabel}>Select Category:</Text>
+    <TouchableOpacity onPress={resetSelections}>
+      <Text style={{ color: '#FF5252', fontWeight: 'bold' }}>Reset</Text>
+    </TouchableOpacity>
+  </View>
         <View style={styles.pickerWrapper}>
         <TouchableOpacity onPress={() => setCategoryModalVisible(true)} style={styles.selectionButton}>
   <Text style={styles.selectionText}>
@@ -170,6 +194,18 @@ const KidsSection = ({ navigation }) => {
   </Text>
 </TouchableOpacity>
         </View>
+
+        <View style={styles.pickerWrapper}>
+  <TouchableOpacity
+    onPress={() => setLanguageModalVisible(true)}
+    style={styles.selectionButton}
+  >
+    <Text style={styles.selectionText}>
+      {selectedLanguage || "Choose a Language"}
+    </Text>
+  </TouchableOpacity>
+</View>
+
 
         {selectedVoice !== "" && VoiceDetails[selectedVoice] && (
   <View style={styles.voiceInfoContainer}>
@@ -190,6 +226,7 @@ const KidsSection = ({ navigation }) => {
   <View style={styles.modalBackground}>
     <View style={styles.modalContainer}>
       <Text style={styles.modalHeader}>Select Category</Text>
+
       <View style={styles.gridContainer}>
   {categories.map((cat) => (
     <TouchableOpacity
@@ -250,12 +287,60 @@ const KidsSection = ({ navigation }) => {
   </View>
 </Modal>
 
+
+<Modal visible={isLanguageModalVisible} animationType="slide" transparent={true}>
+  <View style={styles.modalBackground}>
+    <View style={styles.modalContainer}>
+      <Text style={styles.modalHeader}>Select Language</Text>
+      <View style={styles.gridContainer}>
+        {Languages.map((lang) => (
+          <TouchableOpacity
+            key={lang}
+            style={styles.gridItem}
+            onPress={() => {
+              setSelectedLanguage(lang);
+              setLanguageModalVisible(false);
+            }}
+          >
+            <Image
+              source={{
+                uri:
+                  lang === "English"
+                    ? "https://cdn-icons-png.flaticon.com/512/197/197374.png"
+                    : lang === "Tamil"
+                    ? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFWB-9oCllMe5ajBZ9D4eDWN_dYBdy56l28Q&s"
+                    : "https://hindi.mapsofindia.com/maps/indian-flag.jpg",
+              }}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+            <Text style={styles.gridText}>{lang}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <TouchableOpacity
+        onPress={() => setLanguageModalVisible(false)}
+        style={styles.modalClose}
+      >
+        <Text style={styles.modalCloseText}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
+
+
+
+
+
 {selectedCategory && (
   <View style={styles.createStoryContainer}>
     <TouchableOpacity onPress={() =>
       navigation.navigate("CreateStory", {
         category: selectedCategory,
         voiceId: VoiceDetails[selectedVoice]?.voice_id, 
+        lang:selectedLanguage,
       })
     }>
       <Text style={styles.createStoryHeader}>
@@ -264,34 +349,13 @@ const KidsSection = ({ navigation }) => {
     </TouchableOpacity>
   </View>
 )}
-    <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-  <Text style={{ fontSize: 18, fontWeight: 'bold'}}></Text>
-  <TouchableOpacity onPress={resetSelections}>
-    <Icon name="refresh" size={24} color="#00A86B" />
-  </TouchableOpacity>
-</View>
+    
 
 </View>
-{favoriteStories.length > 0 ? (
-  <ScrollView style={styles.favoritesSection}>
-    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-      {favoriteStories.map((item, index) => (
-        <View key={index} style={styles.favoriteCard}>
-          <Image source={{ uri: item.favoriteImage }} style={styles.favoriteImage} />
-          <Text style={styles.favoriteText}>{item.story}</Text>
-        </View>
-      ))}
-    </ScrollView>
-  </ScrollView>
-) : selectedCategory && (
-  <Text style={styles.infoText}>
-    No favorite stories available for "{selectedCategory}" yet.
-  </Text>
-)}
-
 
 
     </ScrollView>
+    </View>
   );
 };
 
@@ -299,15 +363,24 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 20,
     flex: 1,
-    backgroundColor: "white", 
+    backgroundColor: '#0D0D0D', 
     padding: 20,
   },
   topBar: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "black",
   },
+  
+  topBarTitle: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  
   iconSpacing: {
     marginRight: 15,
   },
@@ -316,7 +389,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginVertical: 15,
-    color: "#333", 
+    color: "white", 
   },
   pickerContainer: {
     marginTop: 20,
@@ -324,21 +397,22 @@ const styles = StyleSheet.create({
   pickerLabel: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#444",
+    color: "white",
     marginBottom: 8,
   },
 
   
   pickerWrapper: {
     marginBottom: 15,
-    borderColor:'black',
+    borderColor:'green',
    
   },
   selectionButton: { 
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 100,
     marginLeft:10,
-    backgroundColor:'black'
+    backgroundColor:"#00A86B"
+
   },
   selectionText: {
     fontSize: 16,
@@ -384,7 +458,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   
-  
   favoriteImage: {
     width: 100,
     height: 100,
@@ -416,8 +489,9 @@ const styles = StyleSheet.create({
   avatar: {
     width: 100,
     height: 100,
-    borderRadius: 12,
+    borderRadius: 50,
     marginBottom: 8,
+
   },
   gridText: {
     fontSize: 16,
@@ -440,7 +514,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 10,
-    color: "#00A86B",
+    color: "black",
   },
   modalClose: {
     marginTop: 10,
@@ -454,18 +528,20 @@ const styles = StyleSheet.create({
   createStoryContainer: {
     marginVertical: 20,
     alignItems: "center",
+    backgroundColor:"#00A86B",
+    borderRadius:40,
+    padding:15
   },
   createStoryHeader: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "black",
+    color: "white",
     borderColor:'black',
-    backgroundColor:'white'
   },
   infoText: {
     marginTop: 20,
     fontSize: 16,
-    color: "#777",
+    color: "white",
     textAlign: "center",
   },
 });

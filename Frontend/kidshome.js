@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   header: { padding: 20, paddingTop: 50 },
 
   kidsWelcome: {
-    color: "#FFD700",
+    color: "#00A86B",
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   
   createPrompt: {
     fontSize: 18,
-    color: "#FFD700",
+    color: "#00A86B",
     fontWeight: "700",
     textAlign: "center",
   },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   
   createButton: {
     flexDirection: "row",
-    backgroundColor: "#7B68EE",
+    backgroundColor: "#00A86B",
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 25,

@@ -156,14 +156,14 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingBottom: 40,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#0D0D0D',
     flexGrow: 1,
   },
   backButton: {
     position: "absolute",
     top: 40,
     left: 20,
-    backgroundColor: "#007AFF",
+    color:"#00A86B",
     padding: 10,
     borderRadius: 20,
     zIndex: 1,
@@ -172,7 +172,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     right: 20,
-    backgroundColor: "#FF3B30",
     padding: 10,
     borderRadius: 20,
     zIndex: 1,
@@ -215,7 +214,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   saveButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#00A86B",
     padding: 12,
     borderRadius: 10,
     marginTop: 20,
