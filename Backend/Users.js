@@ -23,6 +23,11 @@ const userCollection=db.collection('Users');
 const storyCollection=db.collection('Stories');
 
 const FavCollection=db.collection('Fav');
+
+
+const adultUserCollection = db.collection('AdultUsers');
+const adultStoryCollection = db.collection('AdultStories');
+const adultFavCollection = db.collection('AdultFavs');
 // const promptCollection=db.collection('Prompts');
 // const mqttCollection=db.collection('MqttMessages');
 
@@ -242,6 +247,155 @@ return res.status(500).json({ success: false, message: "Server error", error: er
     }
 });
 
+app.post("/adult/story", async (req, res) => {
+    try {
+        const { username, storyText, audioUrl } = req.body;
+        if (!username || !storyText || !audioUrl) {
+            return res.status(400).json({ message: "Missing required fields" });
+        }
+        await adultStoryCollection.insertOne({ username, storyText, audioUrl, createdAt: new Date() });
+        res.status(201).json({ message: "Story added successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to add story", error: error.message });
+    }
+});
+
+app.get("/adult/story", async (req, res) => {
+    try {
+        const stories = await adultStoryCollection.find().sort({ createdAt: -1 }).toArray();
+        res.json(stories);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch stories", error: error.message });
+    }
+});
+
+app.delete("/adult/story", async (req, res) => {
+    try {
+        await adultStoryCollection.deleteMany({});
+        res.json({ message: "All adult stories deleted" });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to delete stories", error: error.message });
+    }
+});
+
+app.post("/adult/favorite", async (req, res) => {
+    try {
+        const { username, story, isFavorite, audioUrl, category, favoriteImage } = req.body;
+        if (!username || !story || typeof isFavorite !== 'boolean' || !audioUrl || !category || !favoriteImage) {
+            return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        await adultFavCollection.insertOne({
+            username, story, isFavorite, audioUrl, category, favoriteImage, createdAt: new Date()
+        });
+
+        res.status(201).json({ message: "Favorite added" });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to save favorite", error: error.message });
+    }
+});
+
+app.get("/adult/favorite", async (req, res) => {
+    try {
+        const { category } = req.query;
+        const filter = { isFavorite: true };
+        if (category) filter.category = category;
+
+        const favorites = await adultFavCollection.find(filter).sort({ createdAt: -1 }).toArray();
+        res.json(favorites);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch favorites", error: error.message });
+    }
+});
+
+app.delete("/adult/favorite/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        await adultFavCollection.deleteOne({ _id: new ObjectId(id) });
+        res.json({ message: "Favorite removed" });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to delete favorite", error: error.message });
+    }
+});
+
+
+app.post('/adult/deduct-credits', async (req, res) => {
+    const { username } = req.body;
+    try {
+        let user = await adultUserCollection.findOne({ username });
+
+        if (!user) {
+            user = { username, credits: 100 };
+            await adultUserCollection.insertOne(user);
+        } else if (user.credits === undefined) {
+            user.credits = 100;
+            await adultUserCollection.updateOne({ username }, { $set: { credits: 100 } });
+        }
+
+        if (user.credits >= 20) {
+            const newCredits = user.credits - 20;
+            await adultUserCollection.updateOne({ username }, { $set: { credits: newCredits } });
+            return res.json({ success: true, newCredits });
+        } else {
+            return res.status(400).json({ success: false, message: "Insufficient credits" });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    }
+});
+
+app.post('/adult/add-credits', async (req, res) => {
+    const { username, credits } = req.body;
+
+    if (!username || credits === undefined) {
+        return res.status(400).json({ success: false, message: "Username and credits are required" });
+    }
+
+    try {
+        const user = await adultUserCollection.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const newCredits = (user.credits || 0) + credits;
+
+        await adultUserCollection.updateOne(
+            { username },
+            { $set: { credits: newCredits } }
+        );
+
+        return res.json({ success: true, message: "Credits updated", newCredits });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error", error: error.message });
+    }
+});
+
+app.get("/adult/get-credits", async (req, res) => {
+    try {
+        const { username } = req.query;
+        if (!username) {
+            return res.status(400).json({ success: false, message: "Username is required" });
+        }
+
+        let user = await adultUserCollection.findOne({ username });
+
+        if (!user) {
+            await adultUserCollection.insertOne({ username, credits: 100 });
+            return res.json({ success: true, credits: 100 });
+        }
+
+        if (user.credits === undefined) {
+            await adultUserCollection.updateOne({ username }, { $set: { credits: 100 } });
+            return res.json({ success: true, credits: 100 });
+        }
+
+        res.json({ success: true, credits: user.credits });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+});
+
 
 // app.post("/audio",async(req,res)=>{
 
@@ -267,7 +421,7 @@ return res.status(500).json({ success: false, message: "Server error", error: er
 // })
 
 app.listen(port, '0.0.0.0', () => {
-    console.log(`Server running at http://192.168.1.26:${port}`);
+    console.log(`Server running at http://192.168.1.27:${port}`);
 });
 
 

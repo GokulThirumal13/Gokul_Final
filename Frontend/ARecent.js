@@ -4,7 +4,7 @@ import {View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityInd
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-export default function RecentStories() {
+export default function ARecentStories() {
     const [stories, setStories] = useState([]);
     const [sound, setSound] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -13,10 +13,11 @@ export default function RecentStories() {
     useEffect(() => {
         const fetchStories = async () => {
             try {
-                const response = await fetch('http://192.168.1.27:3001/story');
+                const response = await fetch('http://192.168.1.27:3001/adult/story');
                 if (!response.ok) throw new Error('Failed to fetch stories');
                 const data = await response.json();
-                setStories(data);
+                const filteredStories = data.filter(story => !story.isAdult);
+                setStories(filteredStories);
             } catch (error) {
                 console.error('Error fetching stories:', error);
                 Alert.alert('Error', 'Failed to load recent stories');
@@ -24,6 +25,7 @@ export default function RecentStories() {
         };
         fetchStories();
     }, []);
+    
 
     const toggleAudio = async (audioUrl) => {
         try {

@@ -125,7 +125,7 @@ async function convertTextToSpeech(text, filename, voiceId) {
         const filePath = path.join(audioDir, filename);
         fs.writeFileSync(filePath, Buffer.from(audioBuffer));
 
-        return `http://192.168.221.244:3000/audio/${filename}`;
+        return `http://192.168.1.27:3000/audio/${filename}`;
     } catch (error) {
         console.error('Error in convertTextToSpeech:', error);
         return null;

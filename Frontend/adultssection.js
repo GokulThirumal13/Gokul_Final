@@ -6,23 +6,23 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 import { LinearGradient } from "expo-linear-gradient";
 // import { Picker } from "@react-native-picker/picker";
-const categories = ["Horror", "Adventure", "Fantasy", "Comedy", "Educational"];
-const Voices=['Daniel','Brian', 'Lily', 'Eric','Jessica'];
-const Languages=['English','Tamil', 'Hindi'];
+const categories = ["Thriller", "Drama", "Action", "Comedy", "Documentary"];
+const Voices = ['John', 'Sophia', 'David', 'Olivia', 'James'];
+const Languages = ['English', 'Tamil', 'Hindi'];
 const CategoryDetails={
-  Horror:{
+  Thriller:{
     avatar:"https://e7.pngegg.com/pngimages/581/432/png-clipart-zombie-animated-illustration-t-shirt-drawing-ferocious-masks-avatar-heroes-head-thumbnail.png"
   },
-  Adventure:{
+  Drama:{
     avatar:"https://img.freepik.com/free-photo/three-dimensional-kids-adventure-explore-moon-space_23-2151639517.jpg?semt=ais_hybrid&w=740"
   },
-  Fantasy:{
+  Action:{
     avatar:"https://kidscreen.com/wp/wp-content/uploads/2018/07/TheDragonPrince.jpg"
   },
   Comedy:{
     avatar:"https://c8.alamy.com/comp/TC7AK9/young-kids-avatar-carton-character-TC7AK9.jpg"
   },
-  Educational:{
+  Documentary:{
     avatar:"https://thumbs.dreamstime.com/b/subject-school-chemistry-two-children-conduct-chemical-experiments-d-avatar-boy-girl-back-to-327790600.jpg"
   }
 }
@@ -61,7 +61,7 @@ const VoiceDetails = {
 
 
 
-const KidsSection = ({ navigation }) => {
+const AdultsSection = ({ navigation }) => {
   const [age, setAge] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedVoice,setSelectedVoice]=useState("");
@@ -90,7 +90,7 @@ const KidsSection = ({ navigation }) => {
       if (!selectedCategory) return;
   
       try {
-        const response = await fetch(`http://192.168.1.27:3001/favorite?category=${selectedCategory}`);
+        const response = await fetch(`http://192.168.1.27:3001//adult/favorite?category=${selectedCategory}`);
         const data = await response.json();
         setFavoriteStories(data);
       } catch (error) {
@@ -131,7 +131,7 @@ const KidsSection = ({ navigation }) => {
     <Ionicons name="person-circle-outline" size={28} color="white" style={styles.iconSpacing} />
   </TouchableOpacity>
 
-  <Text style={styles.topBarTitle}>Kids Section</Text>
+  <Text style={styles.topBarTitle}>Adults Section</Text>
 
   <TouchableOpacity onPress={handleLogout}>
     <Ionicons name="log-out-outline" size={28} color="white" />
@@ -547,4 +547,4 @@ const styles = StyleSheet.create({
 });
 
 
-export default KidsSection;
+export default AdultsSection;

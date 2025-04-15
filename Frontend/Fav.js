@@ -16,7 +16,7 @@ export default function FavoriteStories() {
 
   const loadFavoriteStories = async () => {
     try {
-      const response = await fetch("http://192.168.221.244:3001/favorite");
+      const response = await fetch("http://192.168.1.27:3001/favorite");
       if (!response.ok) throw new Error("Failed to fetch favorite stories");
       const data = await response.json();
       setFavoriteStories(data);
@@ -75,7 +75,6 @@ export default function FavoriteStories() {
               : "Play Audio"}
           </Text>
         
-          {/* Add green dot indicator */}
           {isPlaying && currentAudio === item.audioUrl && (
             <View
               style={{
@@ -106,7 +105,7 @@ export default function FavoriteStories() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`http://192.168.221.244:3001/favorite/${id}`, {
+              const response = await fetch(`http://192.168.1.27:3001/favorite/${id}`, {
                 method: "DELETE",
               });
               if (!response.ok) throw new Error("Delete failed");

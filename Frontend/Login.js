@@ -29,7 +29,7 @@ const LoginScreen = ({ navigation }) => {
   const [storedPhone, setStoredPhone] = useState('');
   const [storedLocation, setStoredLocation] = useState('');
 
-  const API_URL = 'http://192.168.221.244:3001';
+  const API_URL = 'http://192.168.1.27:3001';
 
   useEffect(() => {
     async function fetchStoredData() {

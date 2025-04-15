@@ -79,7 +79,7 @@ const SubscriptionPage = ({ navigation }) => {
       return;
     }
     try {
-      const response = await axios.post('http://192.168.221.244:3001/add-credits', {
+      const response = await axios.post('http://192.168.1.27:3001/add-credits', {
         username,
         credits: selectedPlan.credits,
       });

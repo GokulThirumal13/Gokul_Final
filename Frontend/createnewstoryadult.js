@@ -18,7 +18,7 @@ import Slider from '@react-native-community/slider';
 import { Image } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 
-export default function NewStoryPrompt() {
+export default function NewStoryPromptAdults() {
     const [prompt, setPrompt] = useState('');
     const [story, setStory] = useState('');
     const [audioUrl, setAudioUrl] = useState(null);
@@ -82,7 +82,7 @@ export default function NewStoryPrompt() {
             const favoriteImage = favoriteImageUrls[category] || null;
     
             try {
-                const response = await fetch('http://192.168.1.27:3001/favorite', {
+                const response = await fetch('http://192.168.1.27:3001/adult/favorite', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -118,7 +118,7 @@ export default function NewStoryPrompt() {
     useEffect(() => {
         const fetchCredits = async () => {
             try {
-                const response = await fetch(`http://192.168.1.27:3001/get-credits?username=${username}`);
+                const response = await fetch(`http://192.168.1.27:3001//adult/get-credits?username=${username}`);
                 const data = await response.json();
                 if (data.success) setCredits(data.credits);
             } catch (error) {
@@ -197,7 +197,7 @@ export default function NewStoryPrompt() {
 
     const deductCredits = async () => {
         try {
-            const response = await fetch("http://192.168.1.27:3001/deduct-credits", {
+            const response = await fetch("http://192.168.1.27:3001//adult/deduct-credits", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username }),
@@ -219,7 +219,7 @@ export default function NewStoryPrompt() {
 
     const sendStoryToBackend = async (storyText, audioUrl) => {
         try {
-            const response = await fetch('http://192.168.1.27:3001/story', {
+            const response = await fetch('http://192.168.1.27:3001//adult/story', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt,username, storyText, audioUrl }),

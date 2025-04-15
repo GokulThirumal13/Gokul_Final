@@ -7,8 +7,8 @@ const ProfileSelection = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.heading}>Who's Watching?</Text>
 
-      <View style={styles.profiles}>
-        <TouchableOpacity style={styles.profile}>
+      <View style={styles.profiles} >
+        <TouchableOpacity style={styles.profile} onPress={()=>navigation.navigate('Adults')} >
           <Image
             source={{
               uri: 'https://i.pinimg.com/736x/64/8b/cf/648bcf9336ac4a0c5d0604f77045ec4d.jpg',
