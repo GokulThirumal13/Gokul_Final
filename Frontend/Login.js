@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Alert,
-  StatusBar,
-  ScrollView,
-  KeyboardAvoidingView,
-} from 'react-native';
+import {View,Text,TextInput,TouchableOpacity,StyleSheet,Image,Alert,StatusBar,ScrollView,KeyboardAvoidingView,}from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }) => {
@@ -75,7 +64,7 @@ const LoginScreen = ({ navigation }) => {
           setStoredPhone(data.phone || phone);
           setStoredLocation(data.location || location);
 
-          navigation.navigate('pages');
+          navigation.navigate('sub');
         } else {
           await AsyncStorage.setItem('username', username);
           await AsyncStorage.setItem('userAge', age);
@@ -125,6 +114,12 @@ const LoginScreen = ({ navigation }) => {
           uri: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg',
         }}
         style={styles.logo}
+        resizeMode="contain"
+      />
+
+      <Image
+        source={require('./assets/login.png')} 
+        style={styles.authImage}
         resizeMode="contain"
       />
 
@@ -195,6 +190,7 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.forgotPassword}>Forgot Password?</Text>
         </TouchableOpacity>
       )}
+      
 
       <TouchableOpacity onPress={handleLogin} style={styles.signInButton}>
         <Text style={styles.signInText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
@@ -272,6 +268,15 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginBottom: 20,
   },
+  authImage: {
+  width: '50%',      
+  height: 100,        
+  marginBottom: 20,   
+  borderRadius: 10,   
+  alignSelf: 'center',
+  resizeMode: 'contain' 
+},
+
   link: {
     color: '#B3B3B3',
     textAlign: 'center',

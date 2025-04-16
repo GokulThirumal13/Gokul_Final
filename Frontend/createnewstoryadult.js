@@ -118,7 +118,7 @@ export default function NewStoryPromptAdults() {
     useEffect(() => {
         const fetchCredits = async () => {
             try {
-                const response = await fetch(`http://192.168.1.27:3001//adult/get-credits?username=${username}`);
+                const response = await fetch(`http://192.168.1.27:3001/adult/get-credits?username=${username}`);
                 const data = await response.json();
                 if (data.success) setCredits(data.credits);
             } catch (error) {
@@ -197,7 +197,7 @@ export default function NewStoryPromptAdults() {
 
     const deductCredits = async () => {
         try {
-            const response = await fetch("http://192.168.1.27:3001//adult/deduct-credits", {
+            const response = await fetch("http://192.168.1.27:3001/adult/deduct-credits", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username }),
@@ -219,7 +219,7 @@ export default function NewStoryPromptAdults() {
 
     const sendStoryToBackend = async (storyText, audioUrl) => {
         try {
-            const response = await fetch('http://192.168.1.27:3001//adult/story', {
+            const response = await fetch('http://192.168.1.27:3001/adult/story', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt,username, storyText, audioUrl }),
@@ -560,9 +560,9 @@ export default function NewStoryPromptAdults() {
                             </TouchableOpacity>
                         </View>
                         
-                        <ScrollView style={styles.storyScrollView}>
+                        <View style={styles.storyScrollView}>
                             <Text style={styles.storyModalText}>{story}</Text>
-                        </ScrollView>
+                        </View>
 
                         <TouchableOpacity onPress={FavoriteToggle} style={styles.favoriteButtonModal}>
                             <Ionicons

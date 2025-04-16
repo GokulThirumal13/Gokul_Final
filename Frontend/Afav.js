@@ -41,7 +41,7 @@ export default function AdultFavoriteStories() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`http://192.168.1.27:3001/favorite/${id}`, {
+              const response = await fetch(`http://192.168.1.27:3001/adult/favorite/${id}`, {
                 method: "DELETE",
               });
               if (!response.ok) throw new Error("Delete failed");

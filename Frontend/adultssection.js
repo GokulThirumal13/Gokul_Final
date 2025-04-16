@@ -7,7 +7,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from "expo-linear-gradient";
 // import { Picker } from "@react-native-picker/picker";
 const categories = ["Thriller", "Drama", "Action", "Comedy", "Documentary"];
-const Voices = ['John', 'Sophia', 'David', 'Olivia', 'James'];
+const Voices = ['Daniel', 'Brian', 'Lily', 'Eric', 'Jessica'];
 const Languages = ['English', 'Tamil', 'Hindi'];
 const CategoryDetails={
   Thriller:{
@@ -149,7 +149,7 @@ const AdultsSection = ({ navigation }) => {
 
 
       <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={28} color="#00A86B"/>
+        <Ionicons name="arrow-back" size={28} color="#A855F7"/>
       </TouchableOpacity>
 
       <Image
@@ -337,7 +337,7 @@ const AdultsSection = ({ navigation }) => {
 {selectedCategory && (
   <View style={styles.createStoryContainer}>
     <TouchableOpacity onPress={() =>
-      navigation.navigate("CreateStory", {
+      navigation.navigate('createadultstory', {
         category: selectedCategory,
         voiceId: VoiceDetails[selectedVoice]?.voice_id, 
         lang:selectedLanguage,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 100,
     marginLeft:10,
-    backgroundColor:"#00A86B"
+    backgroundColor:"#A855F7"
 
   },
   selectionText: {
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   createStoryContainer: {
     marginVertical: 20,
     alignItems: "center",
-    backgroundColor:"#00A86B",
+    backgroundColor:"#A855F7",
     borderRadius:40,
     padding:15
   },

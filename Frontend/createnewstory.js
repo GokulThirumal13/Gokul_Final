@@ -35,19 +35,12 @@ export default function NewStoryPrompt() {
     const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
     const [modalVisible, setModalVisible] = useState(false);
     const [audioLoading, setAudioLoading] = useState(false);
+ const [imageUrl,setImageUrl]=useState(null);
 
     const navigation = useNavigation();
     const route = useRoute();
     const {category, voiceId, lang} = route.params || {};
-    const favoriteImageUrls = {
-        Horror: 'https://thumbs.dreamstime.com/b/pair-scared-children-sitting-bed-hiding-frightening-ghost-under-blanket-fearful-kids-imaginary-pair-scared-121266767.jpg',
-        Adventure: 'https://img.freepik.com/free-vector/scene-with-many-children-park_1308-43397.jpg',
-        Fantasy: 'https://img.freepik.com/free-vector/gradient-childrens-day-illustration_23-2149365424.jpg',
-        Comedy: 'https://www.shutterstock.com/image-vector/happy-little-boys-april-fools-600nw-1320331298.jpg',
-        Educational: 'https://static.vecteezy.com/system/resources/thumbnails/002/192/942/small_2x/education-children-concept-design-free-vector.jpg',
-    };
-
-
+ 
     useEffect(() => {
         const setupAudio = async () => {
             try {
@@ -91,7 +84,7 @@ export default function NewStoryPrompt() {
                         isFavorite: newFavoriteStatus, 
                         audioUrl,
                         category,
-                        favoriteImage 
+                        imageUrl 
                     }),
                 });
     
@@ -183,6 +176,7 @@ export default function NewStoryPrompt() {
             const data = await response.json();
             setStory(data.story);
             setAudioUrl(data.audioUrl);
+	    setImageUrl(data.imageUrl);
             setPrompt("");
             setIsFavorite(false);
             await sendStoryToBackend(data.story, data.audioUrl);
@@ -222,7 +216,7 @@ export default function NewStoryPrompt() {
             const response = await fetch('http://192.168.1.27:3001/story', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt,username, storyText, audioUrl }),
+                body: JSON.stringify({ prompt,username, storyText, audioUrl,imageUrl}),
             });
             
             if (!response.ok) {
@@ -538,7 +532,7 @@ export default function NewStoryPrompt() {
                         <ActivityIndicator size="large" color="#00A86B" />
                         <Text style={styles.loadingText}>Creating your story...</Text>
                         <Image 
-                            source={{ uri: favoriteImageUrls[category] || 'https://img.freepik.com/free-vector/gradient-childrens-day-illustration_23-2149365424.jpg' }} 
+                            source={{ uri: imageUrl || 'https://img.freepik.com/free-vector/gradient-childrens-day-illustration_23-2149365424.jpg' }} 
                             style={styles.loadingImage}
                         />
                     </View>
@@ -559,6 +553,13 @@ export default function NewStoryPrompt() {
                                 <Ionicons name="close-circle" size={28} color="#00A86B" />
                             </TouchableOpacity>
                         </View>
+{imageUrl && (
+                <Image 
+                    source={{ uri: imageUrl }} 
+                    style={styles.storyImage}
+                    resizeMode="cover"
+                />
+            )}
                         
                         <ScrollView style={styles.storyScrollView}>
                             <Text style={styles.storyModalText}>{story}</Text>
@@ -659,8 +660,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#1A1A1A',
         borderRadius: 12,
         padding: 20,
-        width: '90%',
-        maxHeight: '85%',
+        width: '95%',
+        maxHeight: '100%',
         borderColor: '#2A2A2A',
         borderWidth: 1,
     },
@@ -685,13 +686,25 @@ const styles = StyleSheet.create({
         padding: 12,
         borderColor: '#333',
         borderWidth: 1,
+        
     },
     storyModalText: {
         color: '#EAEAEA',
         fontSize: 16,
         lineHeight: 24,
+        maxHeight:100,
+    },
+storyImage: {
+        width: '70%',
+        height: 180,
+        borderRadius: 8,
+        marginBottom: 15,
+        borderColor: '#333',
+        marginLeft:50,
+        borderWidth: 1,
     },
     favoriteButtonModal: {
+        marginTop:40,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',

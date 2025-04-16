@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import RecentStories from "./recent";
 import AdultFavoriteStories from "./Afav";
 
@@ -19,6 +20,37 @@ const AdultsHomeScreen = ({ navigation }) => {
 
   const switchTab = (tab) => {
     setCurrentTab(tab);
+  };
+  const swipeGesture = Gesture.Pan()
+    .runOnJS(true)  
+    .minDistance(50) 
+    .onUpdate((event) => {
+      console.log('Swiping: ', event.translationY);
+    })
+    .onEnd((event) => {
+      if (event.translationY < -30) {
+        console.log('Upward swipe detected, navigating to adult section');
+        
+        requestAnimationFrame(() => {
+          try {
+            navigation.navigate("khome");
+          } catch (e) {
+            console.error("Navigation error:", e);
+          }
+        });
+      }
+    })
+    .simultaneousWithExternalGesture()  
+    .activeOffsetY(-10);  
+  
+
+  const renderProfileIcon = () => {
+    return (
+      <View style={styles.profileContainer}>
+        <Ionicons name="person-circle" size={35} color="#A855F7" />
+        <Text style={styles.profileLabel}>Adult</Text>
+      </View>
+    );
   };
 
   return (
@@ -29,9 +61,11 @@ const AdultsHomeScreen = ({ navigation }) => {
           <View style={styles.headerTopRow}>
             <Text style={styles.appName}>StoryTime - Adult</Text>
             <View style={styles.iconRow}>
-              <TouchableOpacity onPress={() => navigation.navigate("profile")}>
-                <Ionicons name="person-circle-outline" size={28} color="white" />
-              </TouchableOpacity>
+              <GestureDetector gesture={swipeGesture}>
+                <TouchableOpacity onPress={() => navigation.navigate("profile")}>
+                  {renderProfileIcon()}
+                </TouchableOpacity>
+              </GestureDetector>
               <TouchableOpacity
                 onPress={() =>
                   Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -83,7 +117,7 @@ const AdultsHomeScreen = ({ navigation }) => {
           </Text>
         </View>
 
-        {currentTab === "Favorites" && <AdultFavoriteStories/>}
+        {currentTab === "Favorites" && <AdultFavoriteStories />}
         {currentTab === "Recent" && <RecentStories />}
       </ScrollView>
 
@@ -97,6 +131,11 @@ const AdultsHomeScreen = ({ navigation }) => {
           <Ionicons name="create-outline" size={20} color="white" />
           <Text style={styles.createButtonText}>Give me a New Story</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.swipeIndicator}>
+        <Ionicons name="chevron-down" size={20} color="#888" />
+        <Text style={styles.swipeText}>Swipe down for kids mode</Text>
       </View>
     </SafeAreaView>
   );
@@ -205,6 +244,31 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
     marginLeft: 8,
+  },
+  profileContainer: {
+    alignItems: "center",
+  },
+  profileLabel: {
+    color: "white",
+    fontSize: 10,
+    textAlign: "center",
+    marginTop: 2,
+  },
+  swipeIndicator: {
+    position: 'absolute',
+    top: 15,
+    right: 85,
+    alignItems: 'center',
+    opacity: 0.7,
+    flexDirection: 'row',
+  },
+  swipeText: {
+    color: '#888',
+    fontSize: 10,
+    marginLeft: 4,
+  },
+  profileTouchable: {
+    padding: 10, 
   },
 });
 

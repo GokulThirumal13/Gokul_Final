@@ -4,7 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 import useAudioPlayer from "./useAudioPlayer";
 const CARD_WIDTH = (Dimensions.get("window").width - 60) / 2;
 const SPOTIFY_GREEN = "#1DB954";
-
 export default function FavoriteStories() {
   const [favoriteStories, setFavoriteStories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +32,7 @@ export default function FavoriteStories() {
       <View style={styles.imageWrapper}>
         <Image
           source={{
-            uri: item.favoriteImage || "https://cdn.pixabay.com/photo/2019/08/27/03/17/bird-skull-4433244_640.jpg",
+            uri: item.imageUrl || "https://cdn.pixabay.com/photo/2019/08/27/03/17/bird-skull-4433244_640.jpg",
           }}
           style={styles.storyThumbnail}
         />

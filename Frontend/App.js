@@ -10,6 +10,7 @@ import SubscriptionPage from './sub';
 import AdultsHomeScreen from './AdultsHomeScreen';
 import NewStoryPromptAdults from './createnewstoryadult';
 import AdultsSection from './adultssection';
+import BottomNavigate from './bottom';
 
 // import HomePage from './Home';
 // import NewStoryPrompt from './createnewstory';
@@ -28,16 +29,20 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
+      
+      <Stack.Screen name="Login" component={LoginScreen}/>
       <Stack.Screen name='sub' component={SubscriptionPage}/>
       <Stack.Screen name='pages' component={ProfileSelection}/>
       <Stack.Screen name='Adults' component={AdultsHomeScreen}/>
-      <Stack.Screen name="Login" component={LoginScreen}/>
+      
        <Stack.Screen name="CreateStory" component={NewStoryPrompt}/> 
        <Stack.Screen name="khome" component={KidsHomeScreen}/>
+       <Stack.Screen name='bottom' component={BottomNavigate}/>
        <Stack.Screen name='kids' component={KidsSection}/>
        <Stack.Screen name="profile" component={ProfileScreen}/> 
        <Stack.Screen name='createadultstory' component={NewStoryPromptAdults}/>
       <Stack.Screen name='asection' component={AdultsSection}/>
+      
        {/* <Stack.Screen name='sub' component={SubscriptionPage}/> */}
       {/* <Stack.Screen name="Login" component={LoginScreen}/>
         <Stack.Screen name='pages' component={ProfileSelection}/>
