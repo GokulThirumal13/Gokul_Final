@@ -1,32 +1,47 @@
 import React, { useEffect, useState } from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator
+import {
+    View, 
+    Text, 
+    TouchableOpacity, 
+    StyleSheet, 
+    ScrollView, 
+    Alert, 
+    ActivityIndicator
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export default function ARecentStories() {
     const [stories, setStories] = useState([]);
     const [sound, setSound] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentAudio, setCurrentAudio] = useState(null);
-
+    const [username, setUsername] = useState('');
+    const API_URL = 'http://192.168.4.75';
     useEffect(() => {
+        const fetchUserData = async () => {
+            const savedUsername = await AsyncStorage.getItem('username');
+            if (savedUsername) setUsername(savedUsername);
+        };
+        fetchUserData();
+    }, []);
+    useEffect(() => {
+        if (!username) return;
         const fetchStories = async () => {
             try {
-                const response = await fetch('http://192.168.1.27:3001/adult/story');
-                if (!response.ok) throw new Error('Failed to fetch stories');
+                const response = await fetch(`${API_URL}:3001/story?username=${username}&userType=adult`);
+                if (!response.ok) throw new Error('Failed to fetch adult stories');
                 const data = await response.json();
-                const filteredStories = data.filter(story => !story.isAdult);
-                setStories(filteredStories);
+                setStories(data);
             } catch (error) {
-                console.error('Error fetching stories:', error);
-                Alert.alert('Error', 'Failed to load recent stories');
+                console.error('Error fetching adult stories:', error);
+                Alert.alert('Error', 'Failed to load recent adult stories');
             }
         };
         fetchStories();
-    }, []);
-    
-
+    }, [username]);
     const toggleAudio = async (audioUrl) => {
         try {
             if (sound && currentAudio === audioUrl) {
@@ -68,29 +83,37 @@ export default function ARecentStories() {
 
     const clearAllStories = async () => {
         try {
-            const response = await fetch('http://192.168.1.27:3001/story', {
+            const response = await fetch(`${API_URL}:3001/story`, {
                 method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userType: 'adult' })
             });
-            if (!response.ok) throw new Error('Failed to delete stories');
+            
+            if (!response.ok) throw new Error('Failed to delete adult stories');
             setStories([]);
-            Alert.alert('Success', 'All stories have been deleted');
+            Alert.alert('Success', 'All adult stories have been deleted');
         } catch (error) {
-            console.error('Error deleting stories:', error);
-            Alert.alert('Error', 'Failed to delete stories');
+            console.error('Error deleting adult stories:', error);
+            Alert.alert('Error', 'Failed to delete adult stories');
         }
     };
 
     return (
         <ScrollView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>🎧 Recent Stories</Text>
+                <Text style={styles.title}>🎧 Adult Stories</Text>
                 <TouchableOpacity onPress={clearAllStories} style={styles.clearButton}>
                     <Ionicons name="trash" size={20} color="white" />
                 </TouchableOpacity>
             </View>
 
             {stories.length === 0 ? (
-                <ActivityIndicator size="large" color="#1DB954" />
+                <View style={styles.emptyContainer}>
+                    <ActivityIndicator size="large" color="#1DB954" />
+                    <Text style={styles.emptyText}>No adult stories found</Text>
+                </View>
             ) : (
                 stories.map((story, index) => (
                     <LinearGradient
@@ -195,4 +218,15 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         marginLeft: 10,
     },
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 30,
+    },
+    emptyText: {
+        color: '#b3b3b3',
+        marginTop: 16,
+        fontSize: 16,
+        textAlign: 'center',
+    }
 });

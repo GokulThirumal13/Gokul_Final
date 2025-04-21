@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View, 
-  Text, 
-  TextInput,
-  TouchableOpacity, 
-  StyleSheet,
-  Alert, 
-  ScrollView,
-  Modal,
-  ActivityIndicator
+import {View,Text,TextInput,TouchableOpacity,StyleSheet,Alert,ScrollView,Modal,ActivityIndicator
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Audio } from 'expo-av';
@@ -17,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 import { Image } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
+import MQTT from 'react-native-mqtt';
 
 export default function NewStoryPrompt() {
     const [prompt, setPrompt] = useState('');
@@ -26,7 +18,7 @@ export default function NewStoryPrompt() {
     const [isFavorite, setIsFavorite] = useState(false);
     const [age, setAge] = useState('');
     const [sound, setSound] = useState(null);
-    const [credits, setCredits] = useState(100);
+    const [credits, setCredits] = useState(200);
     const [isLoading, setLoading] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [durationMillis, setDurationMillis] = useState(0);
@@ -35,7 +27,18 @@ export default function NewStoryPrompt() {
     const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
     const [modalVisible, setModalVisible] = useState(false);
     const [audioLoading, setAudioLoading] = useState(false);
- const [imageUrl,setImageUrl]=useState(null);
+    const [imageUrl, setImageUrl] = useState(null);
+    
+    const [isRecording, setIsRecording] = useState(false);
+    const [recording, setRecording] = useState();
+    const [recordingStatus, setRecordingStatus] = useState('idle');
+    const [transcribingStatus, setTranscribingStatus] = useState(false);
+
+    const MQTT_BROKER= 'ws://broker.emqx.io:8083/mqtt';
+    const MQTT_TOPIC='python/mqtt';
+    const API_URL = 'http://192.168.4.75:3001';
+
+
 
     const navigation = useNavigation();
     const route = useRoute();
@@ -72,10 +75,8 @@ export default function NewStoryPrompt() {
         setIsFavorite(newFavoriteStatus);
     
         if (newFavoriteStatus && story !== '') {
-            const favoriteImage = favoriteImageUrls[category] || null;
-    
             try {
-                const response = await fetch('http://192.168.1.27:3001/favorite', {
+                const response = await fetch(`${API_URL}/favorite`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -111,7 +112,7 @@ export default function NewStoryPrompt() {
     useEffect(() => {
         const fetchCredits = async () => {
             try {
-                const response = await fetch(`http://192.168.1.27:3001/get-credits?username=${username}`);
+                const response = await fetch(`${API_URL}/get-credits?username=${username}`);
                 const data = await response.json();
                 if (data.success) setCredits(data.credits);
             } catch (error) {
@@ -121,6 +122,154 @@ export default function NewStoryPrompt() {
         if (username) fetchCredits();
     }, [username]);
 
+
+    useEffect(() => {
+        if (modalVisible && story !== '') {
+          if (!MQTT) {
+            console.error('MQTT module is not available');
+            return;
+          }
+          
+          try {
+            MQTT.createClient({
+              uri: 'broker.emqx.io',
+              clientId: `mobile_${Math.random().toString(16).substr(2, 8)}`
+            }).then(client => {
+              client.on('connect', () => {
+                console.log('MQTT connected');
+                const payload = JSON.stringify({
+                  category: category,
+                  story: story,
+                  timestamp: new Date().toISOString(),
+                });
+                client.publish(MQTT_TOPIC, payload, 0, false);
+                console.log('Story sent to MQTT');
+              });
+              client.on('error', (err) => {
+                console.log('MQTT error:', err);
+              });
+              client.on('closed', () => {
+                console.log('MQTT connection closed');
+              });
+              client.connect();
+            }).catch(err => {
+              console.error('MQTT client creation error:', err);
+            });
+          } catch (error) {
+            console.error('Error in MQTT setup:', error);
+          }
+        }
+
+        return () => {
+        };
+      }, [modalVisible, story]);
+    const requestPermissions = async () => {
+        try {
+            const { status } = await Audio.requestPermissionsAsync();
+            return status === 'granted';
+        } catch (error) {
+            console.error('Error requesting recording permissions:', error);
+            Alert.alert('Error', 'Could not request recording permissions');
+            return false;
+        }
+    };
+    const startRecording = async () => {
+        try {
+            const hasPermission = await requestPermissions();
+            if (!hasPermission) {
+                Alert.alert('Permission Required', 'Please grant microphone permissions to record audio');
+                return;
+            }
+
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+                shouldDuckAndroid: true,
+                playThroughEarpieceAndroid: false,
+            });
+
+            const { recording } = await Audio.Recording.createAsync(
+                Audio.RecordingOptionsPresets.HIGH_QUALITY
+            );
+            
+            setRecording(recording);
+            setIsRecording(true);
+            setRecordingStatus('recording');
+            
+            console.log('Recording started');
+        } catch (error) {
+            console.error('Failed to start recording', error);
+            Alert.alert('Error', 'Failed to start recording');
+        }
+    };
+    const stopRecording = async () => {
+        try {
+            if (!recording) return;
+            
+            console.log('Stopping recording..');
+            setIsRecording(false);
+            setRecordingStatus('processing');
+            
+            await recording.stopAndUnloadAsync();
+            const uri = recording.getURI();
+            
+            if (uri) {
+                console.log('Recording stopped, file URI:', uri);
+                setRecordingStatus('transcribing');
+                await transcribeAudio(uri);
+            }
+            
+            setRecording(undefined);
+        } catch (error) {
+            console.error('Failed to stop recording', error);
+            Alert.alert('Error', 'Failed to stop recording');
+            setRecordingStatus('idle');
+            setIsRecording(false);
+        }
+    };
+    const transcribeAudio = async (fileUri) => {
+        try {
+            setTranscribingStatus(true);
+
+            const formData = new FormData();
+            
+            formData.append('audio', {
+                uri: fileUri,
+                type: 'audio/m4a', 
+                name: 'speech.m4a',
+            });
+            
+            console.log('Sending audio for transcription...');
+            const response = await fetch(`${API_URL}/transcribe`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Transcription failed: ${errorData.error || response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('Transcription result:', result);
+            
+            if (result.success && result.text) {
+                setPrompt(result.text);
+                Alert.alert('Success', 'Your speech has been transcribed');
+            } else {
+                Alert.alert('Transcription Error', 'Failed to transcribe audio');
+            }
+        } catch (error) {
+            console.error('Error in transcribeAudio:', error);
+            Alert.alert('Error', `Failed to transcribe audio: ${error.message}`);
+        } finally {
+            setTranscribingStatus(false);
+            setRecordingStatus('idle');
+        }
+    };
 
     const getAudioPermission = async () => {
         try {
@@ -159,11 +308,10 @@ export default function NewStoryPrompt() {
 
         const success = await deductCredits();
         if (!success) return;
-
         setLoading(true);
         const ageAdjustedPrompt = `Generate a story suitable for a ${age}-year-old in the category '${category}' and write the story in ${lang}. User prompt: ${prompt}.`;
         try {
-            const response = await fetch('http://192.168.1.27:3000/generate-story', {
+            const response = await fetch('http://192.168.4.75:3000/generate-story', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt:ageAdjustedPrompt, category, voiceId, lang }),
@@ -176,7 +324,7 @@ export default function NewStoryPrompt() {
             const data = await response.json();
             setStory(data.story);
             setAudioUrl(data.audioUrl);
-	    setImageUrl(data.imageUrl);
+            setImageUrl(data.imageUrl);
             setPrompt("");
             setIsFavorite(false);
             await sendStoryToBackend(data.story, data.audioUrl);
@@ -188,10 +336,9 @@ export default function NewStoryPrompt() {
             setLoading(false);
         }
     };
-
     const deductCredits = async () => {
         try {
-            const response = await fetch("http://192.168.1.27:3001/deduct-credits", {
+            const response = await fetch(`${API_URL}/deduct-credits`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username }),
@@ -210,10 +357,9 @@ export default function NewStoryPrompt() {
             return false;
         }
     };
-
     const sendStoryToBackend = async (storyText, audioUrl) => {
         try {
-            const response = await fetch('http://192.168.1.27:3001/story', {
+            const response = await fetch(`${API_URL}/story`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt,username, storyText, audioUrl,imageUrl}),
@@ -239,9 +385,8 @@ export default function NewStoryPrompt() {
                 Alert.alert('Permission Needed', 'Audio playback requires permission');
                 return;
             }
-
-      
-            if (!audioUrl) {
+            if (!audioUrl) 
+                {
                 Alert.alert('Error', 'No audio file available to play');
                 return;
             }
@@ -350,8 +495,7 @@ export default function NewStoryPrompt() {
                 console.error('Error seeking backward:', error);
             }
         }
-    };
-   
+    };  
     const formatTime = (millis) => {
         if (!millis && millis !== 0) return "0:00";
         const totalSeconds = Math.floor(millis / 1000);
@@ -486,7 +630,7 @@ export default function NewStoryPrompt() {
                 <Ionicons name="wallet-outline" size={24} color="white" />
                 <Text style={styles.creditsText}>{credits}</Text>
             </View>
-            
+    
             <View style={{marginTop: 8}}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Ionicons name="arrow-back" size={28} color="#00A86B" />
@@ -506,8 +650,38 @@ export default function NewStoryPrompt() {
                     placeholder='Type your story here..'
                     placeholderTextColor="#777"
                 />
+                
+                <View style={styles.recordingControls}>
+                    {transcribingStatus ? (
+                        <View style={styles.transcribingContainer}>
+                            <ActivityIndicator size="small" color="#00A86B" />
+                            <Text style={styles.transcribingText}>Converting speech to text...</Text>
+                        </View>
+                    ) : (
+                        <>
+                            <TouchableOpacity 
+                                style={[styles.recordButton, isRecording && styles.recordingActive]} 
+                                onPress={isRecording ? stopRecording : startRecording}
+                            >
+                                <Ionicons 
+                                    name={isRecording ? "stop" : "mic"} 
+                                    size={24} 
+                                    color="white" 
+                                />
+                            </TouchableOpacity>
+                            <Text style={styles.recordingText}>
+                                {isRecording 
+                                    ? 'Tap to stop recording' 
+                                    : recordingStatus === 'processing' 
+                                    ? 'Processing...' 
+                                    : recordingStatus === 'transcribing' 
+                                    ? 'Transcribing...' 
+                                    : 'Tap to record your story idea'}
+                            </Text>
+                        </>
+                    )}
+                </View>
             </View>
-
             <Text style={{ fontSize: 15, color: '#CFCFCF', marginBottom: 10 }}>
                 Voice Selected: {voiceId}
             </Text>
@@ -521,6 +695,9 @@ export default function NewStoryPrompt() {
                     {isLoading ? 'Generating...' : 'Generate Story'}
                 </Text>
             </TouchableOpacity>
+
+
+            
 
             <Modal
                 transparent={true}
@@ -540,200 +717,377 @@ export default function NewStoryPrompt() {
             </Modal>
 
             <Modal
-                transparent={true}
-                animationType="slide"
-                visible={modalVisible && story !== ''}
-                onRequestClose={() => setModalVisible(false)}
+    transparent={true}
+    animationType="slide"
+    visible={modalVisible && story !== ''}
+    onRequestClose={() => setModalVisible(false)}
+>
+    <View style={styles.modalBackground}>
+        <View style={styles.storyModalContainer}>
+            <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Your {category} Story</Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                    <Ionicons name="close-circle" size={28} color="#00B074" />
+                </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+                style={styles.modalContentScrollView}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={{paddingBottom: 20}}
             >
-                <View style={styles.modalBackground}>
-                    <View style={styles.storyModalContainer}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Your {category} Story</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close-circle" size={28} color="#00A86B" />
-                            </TouchableOpacity>
-                        </View>
-{imageUrl && (
-                <Image 
-                    source={{ uri: imageUrl }} 
-                    style={styles.storyImage}
-                    resizeMode="cover"
-                />
-            )}
-                        
-                        <ScrollView style={styles.storyScrollView}>
-                            <Text style={styles.storyModalText}>{story}</Text>
-                        </ScrollView>
-
-                        <TouchableOpacity onPress={FavoriteToggle} style={styles.favoriteButtonModal}>
-                            <Ionicons
-                                name={isFavorite ? 'heart' : 'heart-outline'}
-                                size={24}
-                                color={isFavorite ? 'red' : 'white'}
-                            />
-                            <Text style={{color: 'white', marginLeft: 8, fontSize: 16}}>
-                                {isFavorite ? 'Added to Favorites' : 'Add to Favorites'}
-                            </Text>
-                        </TouchableOpacity>
-
-                        {audioUrl && renderAudioControls()}
-                    </View>
+                {imageUrl && (
+                    <Image 
+                        source={{ uri: imageUrl }} 
+                        style={styles.storyImage}
+                        resizeMode="cover"
+                    />
+                )}
+                
+                <View style={styles.storyTextContainer}>
+                    <Text style={styles.storyModalText}>{story}</Text>
                 </View>
-            </Modal>
 
+                <TouchableOpacity onPress={FavoriteToggle} style={styles.favoriteButtonModal}>
+                    <Ionicons
+                        name={isFavorite ? 'heart' : 'heart-outline'}
+                        size={24}
+                        color={isFavorite ? 'red' : 'white'}
+                    />
+                    <Text style={{color: 'white', marginLeft: 8, fontSize: 16}}>
+                        {isFavorite ? 'Added to Favorites' : 'Add to Favorites'}
+                    </Text>
+                </TouchableOpacity>
 
-
-            
+                {audioUrl && renderAudioControls()}
+            </ScrollView>
+        </View>
+    </View>
+</Modal>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0D0D0D', paddingHorizontal: 16, paddingTop: 24 },
-    contentContainer: { paddingBottom: 100 },
-    title: { fontSize: 22, fontWeight: '600', color: '#EAEAEA', textAlign: 'center', marginVertical: 18 },
+
+    container: { 
+      flex: 1, 
+      backgroundColor: '#121212', 
+      paddingHorizontal: 16, 
+      paddingTop: 24 
+    },
+    contentContainer: { 
+      paddingBottom: 100 
+    },
+    title: { 
+      fontSize: 26, 
+      fontWeight: '700', 
+      color: '#FFFFFF', 
+      textAlign: 'center', 
+      marginVertical: 24,
+      letterSpacing: 0.5
+    },
+
     card: {
-        backgroundColor: '#1A1A1A', padding: 16, borderRadius: 10, marginBottom: 16,
-        borderColor: '#2A2A2A', borderWidth: 1
+      backgroundColor: '#1E1E1E', 
+      padding: 20, 
+      borderRadius: 16, 
+      marginBottom: 24,
+      borderColor: '#333333', 
+      borderWidth: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 4
     },
-    label: { fontSize: 15, fontWeight: '500', color: '#CFCFCF', marginBottom: 6 },
+    label: { 
+      fontSize: 16, 
+      fontWeight: '600', 
+      color: '#E0E0E0', 
+      marginBottom: 10,
+      letterSpacing: 0.3
+    },
     textArea: {
-        backgroundColor: '#262626', color: '#fff', borderColor: '#333',
-        borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 16
+      backgroundColor: '#2A2A2A', 
+      color: '#FFFFFF', 
+      borderColor: '#444444',
+      borderWidth: 1, 
+      borderRadius: 12, 
+      padding: 16, 
+      fontSize: 16,
+      minHeight: 100,
+      textAlignVertical: 'top'
     },
+
     button: {
-        backgroundColor: '#00A86B', padding: 14, borderRadius: 10,
-        marginVertical: 16, alignItems: 'center'
+      backgroundColor: '#00B074', 
+      padding: 16, 
+      borderRadius: 12,
+      marginVertical: 20, 
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
+      elevation: 5
     },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-    storyCard: { backgroundColor: '#1E1E1E', padding: 16, borderRadius: 10 },
-    storyTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 8 },
-    storyText: { fontSize: 16, color: '#ccc' },
-    favoriteButton: { alignItems: 'center', marginTop: 10 },
-    audioContainer: { marginTop: 20 },
+    buttonText: { 
+      color: 'white', 
+      fontSize: 18, 
+      fontWeight: 'bold',
+      letterSpacing: 0.5
+    },
+    
+    storyCard: { 
+      backgroundColor: '#232323', 
+      padding: 20, 
+      borderRadius: 16,
+      marginVertical: 16
+    },
+    storyTitle: { 
+      fontSize: 20, 
+      fontWeight: 'bold', 
+      color: '#FFFFFF', 
+      marginBottom: 12 
+    },
+    storyText: { 
+      fontSize: 16, 
+      color: '#DDDDDD',
+      lineHeight: 24 
+    },
+    favoriteButton: { 
+      alignItems: 'center', 
+      marginTop: 16,
+      flexDirection: 'row',
+      justifyContent: 'center'
+    },
+
+    audioContainer: { 
+      marginTop: 24,
+      backgroundColor: '#242424',
+      borderRadius: 16,
+      padding: 16,
+      borderColor: '#333333',
+      borderWidth: 1
+    },
     audioButton: {
-        backgroundColor: '#00A86B', padding: 12, borderRadius: 10,
-        alignItems: 'center', marginBottom: 10
+      backgroundColor: '#00B074', 
+      padding: 14, 
+      borderRadius: 12,
+      alignItems: 'center', 
+      marginBottom: 12,
+      flexDirection: 'row',
+      justifyContent: 'center'
     },
     seekButton: {
-        backgroundColor: '#00A86B',
-        padding: 12,
-        borderRadius: 50,
-        width: 50,
-        height: 50,
-        alignItems: 'center',
-        justifyContent: 'center',
+      backgroundColor: '#00B074',
+      padding: 12,
+      borderRadius: 50,
+      width: 56,
+      height: 56,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
+      elevation: 3
     },
-    audioTime: { color: '#ccc', textAlign: 'center', marginTop: 5 },
-    creditsContainer: { flexDirection: 'row', alignItems: 'center', marginTop:20,marginBottom: 10, marginLeft: 250 },
-    creditsText: { color: 'white', marginLeft: 8, fontSize: 16 },
-    
+    audioTime: { 
+      color: '#BBBBBB', 
+      textAlign: 'center', 
+      marginTop: 8,
+      fontSize: 14
+    },
+    creditsContainer: { 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      marginTop: 20,
+      marginBottom: 10, 
+      position: 'absolute',
+      right: 16,
+      top: 10,
+      backgroundColor: 'rgba(30, 30, 30, 0.8)',
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20
+    },
+    creditsText: { 
+      color: '#FFFFFF', 
+      marginLeft: 8, 
+      fontSize: 16,
+      fontWeight: '600' 
+    },
+
     modalBackground: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        justifyContent: 'center',
-        alignItems: 'center',
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.85)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backdropFilter: 'blur(3px)'
     },
     loadingContainer: {
-        backgroundColor: '#1A1A1A',
-        borderRadius: 12,
-        padding: 20,
-        width: '80%',
-        alignItems: 'center',
-        borderColor: '#2A2A2A',
-        borderWidth: 1,
+      backgroundColor: '#1E1E1E',
+      borderRadius: 16,
+      padding: 24,
+      width: '85%',
+      alignItems: 'center',
+      borderColor: '#333333',
+      borderWidth: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      elevation: 8
     },
     loadingText: {
-        color: '#EAEAEA',
-        fontSize: 18,
-        fontWeight: '500',
-        marginTop: 15,
-        marginBottom: 20,
+      color: '#FFFFFF',
+      fontSize: 18,
+      fontWeight: '500',
+      marginTop: 20,
+      marginBottom: 24,
     },
     loadingImage: {
-        width: 200,
-        height: 150,
-        borderRadius: 10,
-        marginTop: 15,
+      width: 220,
+      height: 170,
+      borderRadius: 12,
+      marginTop: 16,
+      borderColor: '#333333',
+      borderWidth: 1
     },
+    
     storyModalContainer: {
         backgroundColor: '#1A1A1A',
-        borderRadius: 12,
-        padding: 20,
-        width: '95%',
-        maxHeight: '100%',
-        borderColor: '#2A2A2A',
-        borderWidth: 1,
-    },
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxHeight: '90%', 
+    borderColor: '#333333',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 10
+      },
+      
     modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#333',
-        paddingBottom: 10,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: '#333333',
+      paddingBottom: 16,
     },
     modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#00A86B',
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: '#00B074',
+      letterSpacing: 0.5
     },
     storyScrollView: {
-        maxHeight: 300,
-        borderRadius: 8,
-        backgroundColor: '#262626',
-        padding: 12,
-        borderColor: '#333',
+        flex: 1, 
+        minHeight: 250, 
+        maxHeight: 350, 
+        borderRadius: 12,
+        backgroundColor: '#2A2A2A',
+        padding: 16,
+        borderColor: '#444444',
         borderWidth: 1,
-        
+        marginBottom: 8
     },
     storyModalText: {
-        color: '#EAEAEA',
-        fontSize: 16,
-        lineHeight: 24,
-        maxHeight:100,
+      color: '#FFFFFF',
+      fontSize: 16,
+      lineHeight: 26,
     },
-storyImage: {
-        width: '70%',
-        height: 180,
-        borderRadius: 8,
-        marginBottom: 15,
-        borderColor: '#333',
-        marginLeft:50,
-        borderWidth: 1,
+    storyImage: {
+      width: '75%',
+      height: 200,
+      marginLeft:30,
+      borderRadius: 12,
+      marginBottom: 20,
+      borderColor: '#444444',
+      borderWidth: 1,
     },
     favoriteButtonModal: {
-        marginTop:40,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginVertical: 15,
-        padding: 10,
-        backgroundColor: '#262626',
-        borderRadius: 8,
-        borderColor: '#333',
-        borderWidth: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginVertical: 16,
+      padding: 14,
+      backgroundColor: '#2A2A2A',
+      borderRadius: 12,
+      borderColor: '#444444',
+      borderWidth: 1,
     },
     audioControlsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginVertical: 12,
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginVertical: 16,
+      borderTopWidth: 1,
+      borderTopColor: '#333333',
+      paddingTop: 16
     },
     audioControlButton: {
-        alignItems: 'center',
-        padding: 8,
+      alignItems: 'center',
+      padding: 10,
+      backgroundColor: '#2A2A2A',
+      borderRadius: 10,
+      minWidth: 80
     },
     playbackControlsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        marginTop: 10,
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+      marginTop: 16,
+      marginBottom: 8
+    },
+    recordingControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 16,
+      justifyContent: 'flex-start'
+    },
+    recordButton: {
+      backgroundColor: '#E53935',
+      padding: 12,
+      borderRadius: 50,
+      width: 50,
+      height: 50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12
+    },
+    recordingActive: {
+      backgroundColor: '#B71C1C',
+      borderWidth: 2,
+      borderColor: '#FF5252'
+    },
+    recordingText: {
+      color: '#BBBBBB',
+      fontSize: 14
+    },
+    transcribingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 8
+    },
+    transcribingText: {
+      color: '#00B074',
+      marginLeft: 10,
+      fontSize: 14,
+      fontWeight: '500'
     },
     viewStoryButton: {
-        backgroundColor: '#00A86B',
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-    },
-});
+      backgroundColor: '#00B074',
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  });

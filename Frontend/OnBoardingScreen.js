@@ -1,50 +1,88 @@
-import React, { useRef, useState } from 'react';
-import {
-  View, Text, StyleSheet, Dimensions, TouchableOpacity, StatusBar, ScrollView,
-} from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import {View,Text,StyleSheet,Dimensions,TouchableOpacity,StatusBar,ScrollView,Image,Animated}from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const slides = [
   {
     id: '1',
     title: 'Create Stories',
     description: 'Make your own unique audio stories with just a few taps',
-    icon: 'robot',
+    icon: 'magic',
+    gradientColors: ['#121212', '#1DB954'],
   },
   {
     id: '2',
     title: 'Lifelike Voices',
     description: 'Hear your stories come to life with natural-sounding narration',
     icon: 'volume-up',
+    gradientColors: ['#121212', '#1565C0'],
   },
   {
     id: '3',
     title: 'Easy to Use',
     description: 'Simple interface to quickly generate or customize your stories',
-    icon: 'auto-awesome',
+    icon: 'wand-magic-sparkles',
+    gradientColors: ['#121212', '#9C27B0'],
   },
   {
     id: '4',
     title: 'Full Control',
     description: 'Play, pause, and manage your audio stories however you want',
     icon: 'musical-notes',
+    gradientColors: ['#121212', '#1DB954'],
   },
 ];
 
 const OnboardingScreen = ({ navigation }) => {
   const scrollRef = useRef();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, [currentIndex]);
 
   const handleScroll = (event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / width);
-    setCurrentIndex(index);
+    if (index !== currentIndex) {
+      setCurrentIndex(index);
+    
+      fadeAnim.setValue(0);
+      slideAnim.setValue(50);
+  
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        })
+      ]).start();
+    }
   };
 
-  function goToNext(){
+  const goToNext = () => {
     if (currentIndex < slides.length - 1) {
       scrollRef.current.scrollTo({ x: width * (currentIndex + 1), animated: true });
     } else {
@@ -57,16 +95,22 @@ const OnboardingScreen = ({ navigation }) => {
     navigation.replace('Login');
   };
 
-  const getIcon = (iconName) => {
-    if (iconName === 'auto-awesome') return <MaterialIcons name={iconName} size={80} color="#6B46C1" />;
-    if (iconName === 'musical-notes') return <Ionicons name={iconName} size={80} color="#6B46C1" />;
-    return <FontAwesome5 name={iconName} size={80} color="#6B46C1" />;
+  const getIcon = (iconName, index) => {
+    if (iconName === 'volume-up') return <MaterialIcons name={iconName} size={80} color="#1DB954" />;
+    if (iconName === 'wand-magic-sparkles') return <FontAwesome5 name="magic" size={80} color="#1DB954" />;
+    if (iconName === 'musical-notes') return <Ionicons name={iconName} size={80} color="#1DB954" />;
+    if (iconName === 'magic') return <FontAwesome5 name={iconName} size={80} color="#1DB954" />;
+    return <FontAwesome5 name={iconName} size={80} color="#1DB954" />;
   };
 
   return (
-    <LinearGradient colors={['#121212', '#2D3748']} style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
-      <Text style={styles.appName}>StoryCraft</Text>
+      
+      <View style={styles.header}>
+
+        <Text style={styles.appName}>StoryTime</Text>
+      </View>
 
       <ScrollView
         horizontal
@@ -75,122 +119,182 @@ const OnboardingScreen = ({ navigation }) => {
         ref={scrollRef}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        style={styles.slideContainer}
       >
-        <View style={styles.slide}>
-          {getIcon(slides[0].icon)}
-          <Text style={styles.title}>{slides[0].title}</Text>
-          <Text style={styles.description}>{slides[0].description}</Text>
-        </View>
-        <View style={styles.slide}>
-          {getIcon(slides[1].icon)}
-          <Text style={styles.title}>{slides[1].title}</Text>
-          <Text style={styles.description}>{slides[1].description}</Text>
-        </View>
-        <View style={styles.slide}>
-          {getIcon(slides[2].icon)}
-          <Text style={styles.title}>{slides[2].title}</Text>
-          <Text style={styles.description}>{slides[2].description}</Text>
-        </View>
-        <View style={styles.slide}>
-          {getIcon(slides[3].icon)}
-          <Text style={styles.title}>{slides[3].title}</Text>
-          <Text style={styles.description}>{slides[3].description}</Text>
-        </View>
+        {slides.map((slide, index) => (
+          <View key={slide.id} style={styles.slide}>
+            <LinearGradient 
+              colors={slide.gradientColors} 
+              style={styles.gradientBackground}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+            >
+              <Animated.View 
+                style={[
+                  styles.slideContent,
+                  { 
+                    opacity: currentIndex === index ? fadeAnim : 1,
+                    transform: [{ translateY: currentIndex === index ? slideAnim : 0 }]
+                  }
+                ]}
+              >
+                <View style={styles.iconContainer}>
+                  {getIcon(slide.icon, index)}
+                </View>
+                <Text style={styles.title}>{slide.title}</Text>
+                <Text style={styles.description}>{slide.description}</Text>
+              </Animated.View>
+            </LinearGradient>
+          </View>
+        ))}
       </ScrollView>
 
-      <View style={styles.pagination}>
-        <View style={[styles.dot, currentIndex === 0 && styles.activeDot]} />
-        <View style={[styles.dot, currentIndex === 1 && styles.activeDot]} />
-        <View style={[styles.dot, currentIndex === 2 && styles.activeDot]} />
-        <View style={[styles.dot, currentIndex === 3 && styles.activeDot]} />
-      </View>
+      <View style={styles.footer}>
+        <View style={styles.pagination}>
+          {slides.map((_, index) => (
+            <View 
+              key={index} 
+              style={[
+                styles.dot, 
+                currentIndex === index && styles.activeDot
+              ]} 
+            />
+          ))}
+        </View>
 
-      <TouchableOpacity onPress={goToNext} style={styles.nextButton}>
-        <LinearGradient colors={['#6B46C1', '#805AD5']} style={styles.gradient}>
+        <TouchableOpacity 
+          onPress={goToNext} 
+          style={styles.nextButton}
+          activeOpacity={0.7}
+        >
           <Text style={styles.nextText}>
-            {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
+            {currentIndex === slides.length - 1 ? 'GET STARTED' : 'NEXT'}
           </Text>
-          <MaterialIcons name="arrow-forward" size={20} color="white" />
-        </LinearGradient>
-      </TouchableOpacity>
-
-      {currentIndex < slides.length - 1 && (
-        <TouchableOpacity onPress={finishOnboarding}>
-          <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
-      )}
-    </LinearGradient>
+
+        {currentIndex < slides.length - 1 && (
+          <TouchableOpacity onPress={finishOnboarding} style={styles.skipButton}>
+            <Text style={styles.skipText}>SKIP</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#121212',
+  },
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    zIndex: 10,
+  },
+  logo: {
+    width: 30,
+    height: 30,
+    marginRight: 10,
   },
   appName: {
-    fontSize: 28,
-    color: 'white',
+    fontSize: 24,
+    color: '#1DB954',
     fontWeight: 'bold',
-    marginTop: 50,
+  },
+  slideContainer: {
+    flex: 1,
   },
   slide: {
     width,
+    height: height * 0.7,
+  },
+  gradientBackground: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 30,
+  },
+  slideContent: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  iconContainer: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
   title: {
-    fontSize: 30,
-    color: 'white',
-    fontWeight: 'bold',
-    marginTop: 20,
+    fontSize: 28,
+    color: '#fff',
+    fontWeight: '800',
+    marginBottom: 15,
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
   description: {
-    color: '#CBD5E0',
+    color: '#B3B3B3', 
     fontSize: 16,
     textAlign: 'center',
-    marginTop: 10,
+    lineHeight: 24,
     maxWidth: width * 0.8,
+  },
+  footer: {
+    padding: 20,
+    paddingBottom: 40,
   },
   pagination: {
     flexDirection: 'row',
-    marginBottom: 20,
+    justifyContent: 'center',
+    marginBottom: 30,
   },
   dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#aaa',
-    margin: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#333',
+    marginHorizontal: 4,
   },
   activeDot: {
-    backgroundColor: '#6B46C1',
-    width: 20,
+    backgroundColor: '#1DB954',
+    width: 24,
   },
   nextButton: {
-    width: width * 0.8,
+    backgroundColor: '#1DB954',
     height: 50,
     borderRadius: 25,
-    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 15,
   },
-  gradient: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   nextText: {
-    color: 'white',
-    fontSize: 18,
+    color: '#121212',
+    fontSize: 16,
     fontWeight: 'bold',
-    marginRight: 8,
+    letterSpacing: 1,
+  },
+  skipButton: {
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   skipText: {
-    color: '#CBD5E0',
-    fontSize: 16,
-    marginBottom: 20,
+    color: '#B3B3B3',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 1,
   },
 });
 

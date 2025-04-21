@@ -11,6 +11,7 @@ import AdultsHomeScreen from './AdultsHomeScreen';
 import NewStoryPromptAdults from './createnewstoryadult';
 import AdultsSection from './adultssection';
 import BottomNavigate from './bottom';
+import OnboardingScreen from './OnBoardingScreen';
 
 // import HomePage from './Home';
 // import NewStoryPrompt from './createnewstory';
@@ -29,7 +30,19 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-      
+        <Stack.Screen name="Login" component={LoginScreen} />
+
+        <Stack.Screen name='pages' component={ProfileSelection} />
+        <Stack.Screen name='Adults' component={AdultsHomeScreen} />
+        <Stack.Screen name='asection' component={AdultsSection} />
+        <Stack.Screen name='createadultstory' component={NewStoryPromptAdults} />
+        <Stack.Screen name="khome" component={KidsHomeScreen}/>
+        <Stack.Screen name='kids' component={KidsSection}/>
+        <Stack.Screen name="CreateStory" component={NewStoryPrompt}/>
+       
+
+
+        {/* <Stack.Screen name="onboarding" component={OnboardingScreen}/>
       <Stack.Screen name="Login" component={LoginScreen}/>
       <Stack.Screen name='sub' component={SubscriptionPage}/>
       <Stack.Screen name='pages' component={ProfileSelection}/>
@@ -41,16 +54,16 @@ export default function App() {
        <Stack.Screen name='kids' component={KidsSection}/>
        <Stack.Screen name="profile" component={ProfileScreen}/> 
        <Stack.Screen name='createadultstory' component={NewStoryPromptAdults}/>
-      <Stack.Screen name='asection' component={AdultsSection}/>
-      
-       {/* <Stack.Screen name='sub' component={SubscriptionPage}/> */}
-      {/* <Stack.Screen name="Login" component={LoginScreen}/>
+      <Stack.Screen name='asection' component={AdultsSection}/> */}
+
+        {/* <Stack.Screen name='sub' component={SubscriptionPage}/> */}
+        {/* <Stack.Screen name="Login" component={LoginScreen}/>
         <Stack.Screen name='pages' component={ProfileSelection}/>
         <Stack.Screen name="khome" component={KidsHomeScreen}/>
         <Stack.Screen name='kids' component={KidsSection}/>
         <Stack.Screen name="CreateStory" component={NewStoryPrompt}/>
         <Stack.Screen name="profile" component={ProfileScreen}/>   */}
-         {/* <Stack.Screen name="onboarding" component={Onboarding}/>
+        {/* <Stack.Screen name="onboarding" component={Onboarding}/>
          <Stack.Screen name="Home" component={HomePage}/> 
          <Stack.Screen name="CreateStory" component={NewStoryPrompt}/>
          <Stack.Screen name="Login" component={LoginScreen}/>

@@ -4,16 +4,25 @@ import {View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityInd
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function RecentStories() {
     const [stories, setStories] = useState([]);
     const [sound, setSound] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentAudio, setCurrentAudio] = useState(null);
-
+    const [username, setUsername] = useState('');
+    useEffect(()=>{
+        const fetchUserData=async()=>{
+            const savedUsername=await AsyncStorage.getItem('username');
+            if (savedUsername) setUsername(savedUsername);
+        };
+        fetchUserData();
+    },[]);
     useEffect(() => {
+        if(!username) return;
         const fetchStories = async () => {
             try {
-                const response = await fetch('http://192.168.1.27:3001/story');
+                const response = await fetch(`http://192.168.4.75:3001/story?username=${username}`);
                 if (!response.ok) throw new Error('Failed to fetch stories');
                 const data = await response.json();
                 setStories(data);
@@ -23,7 +32,7 @@ export default function RecentStories() {
             }
         };
         fetchStories();
-    }, []);
+    }, [username]);
 
     const toggleAudio = async (audioUrl) => {
         try {
@@ -66,7 +75,7 @@ export default function RecentStories() {
 
     const clearAllStories = async () => {
         try {
-            const response = await fetch('http://192.168.1.27:3001/story', {
+            const response = await fetch('http://192.168.4.75:3001/story', {
                 method: 'DELETE',
             });
             if (!response.ok) throw new Error('Failed to delete stories');

@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import {View,Text,TextInput,TouchableOpacity,StyleSheet,Image,Alert,StatusBar,ScrollView,KeyboardAvoidingView,}from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+  StatusBar,
+  ScrollView,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 const LoginScreen = ({ navigation }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -18,10 +29,10 @@ const LoginScreen = ({ navigation }) => {
   const [storedPhone, setStoredPhone] = useState('');
   const [storedLocation, setStoredLocation] = useState('');
 
-  const API_URL = 'http://192.168.1.27:3001';
+  const API_URL = 'http://192.168.4.75:3001';
 
   useEffect(() => {
-    async function fetchStoredData() {
+    async function fetchStoredData() {s
       const savedUsername = await AsyncStorage.getItem('username');
       const savedAge = await AsyncStorage.getItem('userAge');
       const savedEmail = await AsyncStorage.getItem('userEmail');
@@ -35,44 +46,68 @@ const LoginScreen = ({ navigation }) => {
       if (savedLocation) setStoredLocation(savedLocation);
     }
     fetchStoredData();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', fetchStoredData);
+    return unsubscribe;
+  }, [navigation]);
+
+  async function saveUserData(userData) {
+    try {
+      await AsyncStorage.setItem('username', userData.username || username);
+      await AsyncStorage.setItem('userAge', userData.age?.toString() || age);
+      await AsyncStorage.setItem('userEmail', userData.email || email);
+      await AsyncStorage.setItem('userPhone', userData.phone || phone);
+      await AsyncStorage.setItem('userLocation', userData.location || location);
+      await AsyncStorage.setItem('userBio', userData.bio || bio);
+
+      setStoredUsername(userData.username || username);
+      setStoredAge(userData.age?.toString() || age);
+      setStoredEmail(userData.email || email);
+      setStoredPhone(userData.phone || phone);
+      setStoredLocation(userData.location || location);
+    } catch (error) {
+      console.error('Error saving data:', error);
+    }
+  }
 
   async function handleLogin() {
     const endpoint = isLogin ? '/login' : '/signup';
+  
+    const userData = {
+      username,
+      password,
+      age,
+      email,
+      phone,
+      location,
+      bio
+    };
+    
     try {
       const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, age }),
+        body: JSON.stringify(userData),
       });
 
       const data = await response.json();
 
       if (response.ok) {
         Alert.alert(isLogin ? 'Login Successful' : 'Signup Successful', data.message);
+        
         if (isLogin) {
-          await AsyncStorage.setItem('userAge', data.age.toString());
-          await AsyncStorage.setItem('username', data.username);
-          await AsyncStorage.setItem('userEmail', data.email || email);
-          await AsyncStorage.setItem('userPhone', data.phone || phone);
-          await AsyncStorage.setItem('userLocation', data.location || location);
-          await AsyncStorage.setItem('userBio', data.bio || bio);
-
-          setStoredUsername(data.username);
-          setStoredAge(data.age.toString());
-          setStoredEmail(data.email || email);
-          setStoredPhone(data.phone || phone);
-          setStoredLocation(data.location || location);
-
-          navigation.navigate('sub');
+          const userDataToSave = {
+            username: data.username,
+            age: data.age,
+            email: data.email || email,
+            phone: data.phone || phone,
+            location: data.location || location,
+            bio: data.bio || bio
+          };
+          
+          await saveUserData(userDataToSave);
+          navigation.navigate('pages');
         } else {
-          await AsyncStorage.setItem('username', username);
-          await AsyncStorage.setItem('userAge', age);
-          await AsyncStorage.setItem('userEmail', email);
-          await AsyncStorage.setItem('userPhone', phone);
-          await AsyncStorage.setItem('userLocation', location);
-          await AsyncStorage.setItem('userBio', bio);
-
+          await saveUserData(userData);
           setIsLogin(true);
           setUsername('');
           setPassword('');
@@ -87,7 +122,7 @@ const LoginScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error:', error);
-      Alert.alert('Network Error');
+      Alert.alert('Network Error', 'Please check your connection and try again');
     }
   }
 
@@ -106,7 +141,7 @@ const LoginScreen = ({ navigation }) => {
   }
 
   return (
-    <ScrollView  style={{ backgroundColor: '#121212' }} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ backgroundColor: '#121212' }} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
       <Image
@@ -116,7 +151,9 @@ const LoginScreen = ({ navigation }) => {
         style={styles.logo}
         resizeMode="contain"
       />
-
+      <TouchableOpacity onPress={() => navigation.navigate('onboarding')}>
+        <Ionicons name="arrow-back" size={28} color="#00A86B"/>
+      </TouchableOpacity>
       <Image
         source={require('./assets/login.png')} 
         style={styles.authImage}
@@ -125,7 +162,7 @@ const LoginScreen = ({ navigation }) => {
 
       <Text style={styles.title}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
 
-      <TextInput
+      <TextInput  
         style={styles.input}
         placeholder="Username"
         placeholderTextColor="#aaa"
@@ -135,7 +172,7 @@ const LoginScreen = ({ navigation }) => {
 
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Password" 
         placeholderTextColor="#aaa"
         secureTextEntry
         value={password}
@@ -191,7 +228,6 @@ const LoginScreen = ({ navigation }) => {
         </TouchableOpacity>
       )}
       
-
       <TouchableOpacity onPress={handleLogin} style={styles.signInButton}>
         <Text style={styles.signInText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
       </TouchableOpacity>
@@ -228,7 +264,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 25,
     paddingBottom: 60, 
-  
   },
   logo: {
     height: 60,
@@ -269,14 +304,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   authImage: {
-  width: '50%',      
-  height: 100,        
-  marginBottom: 20,   
-  borderRadius: 10,   
-  alignSelf: 'center',
-  resizeMode: 'contain' 
-},
-
+    width: '50%',      
+    height: 100,        
+    marginBottom: 20,   
+    borderRadius: 10,   
+    alignSelf: 'center',
+    resizeMode: 'contain' 
+  },
   link: {
     color: '#B3B3B3',
     textAlign: 'center',

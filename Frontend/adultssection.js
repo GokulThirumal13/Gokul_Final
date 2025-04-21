@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import { LinearGradient } from "expo-linear-gradient";
-// import { Picker } from "@react-native-picker/picker";
 const categories = ["Thriller", "Drama", "Action", "Comedy", "Documentary"];
 const Voices = ['Daniel', 'Brian', 'Lily', 'Eric', 'Jessica'];
 const Languages = ['English', 'Tamil', 'Hindi'];
@@ -74,6 +73,8 @@ const AdultsSection = ({ navigation }) => {
 
   const [favoriteStories,setFavoriteStories]=useState([]);
 
+  const API_URL = 'http://192.168.4.75:3001';
+
   useEffect(() => {
     async function fetchData() {
       const storedAge = await AsyncStorage.getItem("userAge");
@@ -90,7 +91,7 @@ const AdultsSection = ({ navigation }) => {
       if (!selectedCategory) return;
   
       try {
-        const response = await fetch(`http://192.168.1.27:3001//adult/favorite?category=${selectedCategory}`);
+        const response = await fetch(`${API_URL}/favorite?category=${selectedCategory}`);
         const data = await response.json();
         setFavoriteStories(data);
       } catch (error) {
@@ -328,11 +329,6 @@ const AdultsSection = ({ navigation }) => {
     </View>
   </View>
 </Modal>
-
-
-
-
-
 
 {selectedCategory && (
   <View style={styles.createStoryContainer}>

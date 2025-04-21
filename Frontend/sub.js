@@ -34,7 +34,6 @@ const SubscriptionPage = ({ navigation, route }) => {
   const checkSubscriptionStatus = async (username) => {
     try {
       const response = await axios.get(`http://192.168.1.27:3001/subscription-status?username=${username}`);
-      
       if (response.data.success && response.data.subscription) {
         setUserSubscription(response.data.subscription);
         
@@ -67,17 +66,10 @@ const SubscriptionPage = ({ navigation, route }) => {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  const plans = [
-    {
-      id: 'free',
-      name: 'Free',
+  const plans = [{id: 'free',name: 'Free',
       price: '₹0',
       period: '',
-      color: '#444',
-      features: [
-        { text: 'Limited Story Credits', included: true },
-        { text: 'Basic Stories', included: true },
-        { text: 'With Ads', included: true },
+      color: '#444',features: [{ text: 'Limited Story Credits', included: true },{ text: 'Basic Stories', included: true },{ text: 'With Ads', included: true },
         { text: 'Limited Downloads', included: true },
         { text: 'Premium Stories', included: false },
         { text: '24/7 Support', included: false },
@@ -123,16 +115,26 @@ const SubscriptionPage = ({ navigation, route }) => {
       Alert.alert('Error', 'Please select a plan and ensure you are logged in.');
       return;
     }
+    try{
+      console.log("Attempting to subscribe with data:",{
+        username,
+        credits:selectedPlan.credits,
+        plan:selectedPlan.id,
+        expiryDate:calculateExpiryDate(2)
+      });
 
-    try {
       const response = await axios.post('http://192.168.1.27:3001/add-credits', {
         username,
         credits: selectedPlan.credits,
         plan: selectedPlan.id,
         expiryDate: calculateExpiryDate(30) 
       });
-      
+      console.log("Subscription response:",response.data);
       if (response.data.success) {
+        setUserSubscription({
+          plan:selectedPlan.id,
+          expiryDate:calculateExpiryDate(2),
+        });
         await checkSubscriptionStatus(username);
         Alert.alert('Success', 'Subscription activated successfully!', [
           { text: 'OK', onPress: () => navigation.navigate('pages') }
@@ -142,7 +144,13 @@ const SubscriptionPage = ({ navigation, route }) => {
       }
     } catch (error) {
       console.log("Subscription error:", error);
-      Alert.alert('Error', 'Could not subscribe. Please try again later.');
+      console.log("Error details:",error.response?.data||"No response data");
+      if(error.response?.status===404){
+
+      Alert.alert('Connection Error', 'Could not connect to subscription service.');
+      }else{
+        Alert.alert('Error',error.response?.data?.message||'could not subscribe.Please try again later')
+      }
     }
   };
 
@@ -266,7 +274,7 @@ const SubscriptionPage = ({ navigation, route }) => {
           disabled={!selectedPlan}
         >
           <Text style={styles.subscribeButtonText}>
-            {selectedPlan ? `GET ${selectedPlan.name.toUpperCase()}` : 'SELECT A PLAN'}
+            {selectedPlan ? `GET ${selectedPlan.name.toUpperCase()}` : 'Select a plan'}
           </Text>
         </TouchableOpacity>
       </View>

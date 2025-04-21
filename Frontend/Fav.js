@@ -2,20 +2,34 @@ import React, { useEffect, useState } from "react";
 import {View,Text,Image,StyleSheet,FlatList,Alert,ActivityIndicator,TouchableOpacity,Dimensions,} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import useAudioPlayer from "./useAudioPlayer";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 const CARD_WIDTH = (Dimensions.get("window").width - 60) / 2;
 const SPOTIFY_GREEN = "#1DB954";
 export default function FavoriteStories() {
   const [favoriteStories, setFavoriteStories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [username,setUsername]=useState('');
 
   const { isPlaying, currentAudio, toggleAudio } = useAudioPlayer();
+
+
+  useEffect(()=>{
+    const fetchUserData=async()=>{
+      const savedUsername=await AsyncStorage.getItem('username');
+      if (savedUsername) setUsername(savedUsername);
+
+    };
+    fetchUserData();
+  },[]);
   useEffect(() => {
     loadFavoriteStories();
-  }, []);
+  }, [username]);
 
   const loadFavoriteStories = async () => {
+    if(!username) return;
+
     try {
-      const response = await fetch("http://192.168.1.27:3001/favorite");
+      const response = await fetch(`http://192.168.4.75:3001/favorite?username=${username}&userType=child`);
       if (!response.ok) throw new Error("Failed to fetch favorite stories");
       const data = await response.json();
       setFavoriteStories(data);
@@ -104,7 +118,7 @@ export default function FavoriteStories() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`http://192.168.1.27:3001/favorite/${id}`, {
+              const response = await fetch(`http://192.168.4.75:3001/favorite/${id}`, {
                 method: "DELETE",
               });
               if (!response.ok) throw new Error("Delete failed");

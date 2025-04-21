@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Text, TextInput, StyleSheet, View, Image, TouchableOpacity, ScrollView } from "react-native";
+import { Text, TextInput, StyleSheet, View, Image, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -11,9 +11,11 @@ const ProfileScreen = ({ navigation }) => {
   const [age, setAge] = useState("");
   const [location, setLocation] = useState("");
   const [bio, setBio] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadProfileData = async () => {
     try {
+      setIsLoading(true);
       const storedName = await AsyncStorage.getItem("username");
       const storedEmail = await AsyncStorage.getItem("userEmail");
       const storedPhone = await AsyncStorage.getItem("userPhone");
@@ -26,15 +28,23 @@ const ProfileScreen = ({ navigation }) => {
       if (storedPhone) setPhone(storedPhone);
       if (storedAge) setAge(storedAge);
       if (storedLocation) setLocation(storedLocation);
-      if (storedBio) setBio(storedBio);
+      if (storedBio) setBio(storedBio || "Set your heart ablaze");
+      setIsLoading(false);
     } catch (error) {
       console.error("Failed to load profile data:", error);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     loadProfileData();
-  }, []);
+  
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadProfileData();
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
 
   const handleSave = async () => {
     try {
@@ -45,17 +55,45 @@ const ProfileScreen = ({ navigation }) => {
       await AsyncStorage.setItem("userLocation", location);
       await AsyncStorage.setItem("userBio", bio);
 
-      alert("Profile Updated ✅");
-      loadProfileData(); 
+      Alert.alert("Success", "Profile Updated Successfully");
     } catch (error) {
       console.error("Failed to save profile:", error);
+      Alert.alert("Error", "Failed to update profile");
     }
   };
 
-  const handleLogout = () => {
-    alert("Logged Out!");
-    navigation.navigate("Login");
+  const handleLogout = async () => {
+    try {
+      
+      Alert.alert(
+        "Logout",
+        "Are you sure you want to logout?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Logout", 
+            onPress: () => {
+              Alert.alert("Logged Out!");
+              navigation.navigate("Login");
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
+        <Text style={{color: 'white', fontSize: 18}}>Loading profile...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -198,7 +236,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
   },
   infoCard: {
-    backgroundColor: "#1e1e1e", // dark card
+    backgroundColor: "#1e1e1e", 
     padding: 20,
     borderRadius: 15,
     elevation: 5,
@@ -230,6 +268,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
 
 export default ProfileScreen;

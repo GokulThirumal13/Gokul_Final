@@ -1,30 +1,60 @@
 import React, { useEffect, useState } from "react";
-import {View,Text,Image,StyleSheet,FlatList,Alert,ActivityIndicator,TouchableOpacity,Dimensions,}from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  FlatList,
+  Alert,
+  ActivityIndicator,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import useAudioPlayer from "./useAudioPlayer";
+import AsyncStorage from "@react-native-async-storage/async-storage"; 
 
 const CARD_WIDTH = (Dimensions.get("window").width - 60) / 2;
 const PRIMARY_COLOR = "#2D3748"; 
+const API_URL = "http://192.168.4.75";
 
 export default function AdultFavoriteStories() {
   const [favoriteStories, setFavoriteStories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState(""); 
 
   const { isPlaying, currentAudio, toggleAudio } = useAudioPlayer();
-
+  
   useEffect(() => {
-    loadFavoriteStories();
+    const getUsernameAndLoadStories = async () => {
+      try {
+        const storedUsername = await AsyncStorage.getItem("username");
+        if (storedUsername) {
+          setUsername(storedUsername);
+          loadFavoriteStories(storedUsername);
+        } else {
+          setLoading(false);
+          Alert.alert("Error", "User not logged in");
+        }
+      } catch (error) {
+        console.error("Error retrieving username:", error);
+        setLoading(false);
+        Alert.alert("Error", "Could not retrieve user information");
+      }
+    };
+    
+    getUsernameAndLoadStories();
   }, []);
 
-  const loadFavoriteStories = async () => {
+  const loadFavoriteStories = async (user) => {
     try {
-      const response = await fetch("http://192.168.1.27:3001/adult/favorite");
+      const response = await fetch(`${API_URL}:3001/favorite?username=${user}&userType=adult`);
       if (!response.ok) throw new Error("Failed to fetch adult stories");
       const data = await response.json();
       setFavoriteStories(data);
     } catch (error) {
       console.error("Error fetching adults' favorites:", error);
-      Alert.alert("Could not load adult stories");
+      Alert.alert("Error", "Could not load adult stories");
     } finally {
       setLoading(false);
     }
@@ -41,14 +71,14 @@ export default function AdultFavoriteStories() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`http://192.168.1.27:3001/adult/favorite/${id}`, {
+              const response = await fetch(`${API_URL}:3001/favorite/${id}?userType=adult`, {
                 method: "DELETE",
               });
               if (!response.ok) throw new Error("Delete failed");
               setFavoriteStories((prev) => prev.filter((story) => story._id !== id));
             } catch (error) {
               console.error("Error deleting story:", error);
-              Alert.alert("Failed to delete");
+              Alert.alert("Error", "Failed to delete story");
             }
           },
         },
@@ -61,7 +91,7 @@ export default function AdultFavoriteStories() {
       <View style={styles.imageWrapper}>
         <Image
           source={{
-            uri: item.favoriteImage || "https://via.placeholder.com/150x150.png?text=Story",
+            uri: item.imageUrl || "https://via.placeholder.com/150x150.png?text=Story",
           }}
           style={styles.storyThumbnail}
         />
@@ -129,7 +159,7 @@ export default function AdultFavoriteStories() {
         <FlatList
           data={favoriteStories}
           renderItem={renderStoryCard}
-          keyExtractor={(_, index) => index.toString()}
+          keyExtractor={(item) => item._id || Math.random().toString()}
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.listContainer}
