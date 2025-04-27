@@ -22,11 +22,29 @@ const db = client.db('AI');
 const userCollection = db.collection('Users');
 const storyCollection = db.collection('Stories');
 const FavCollection = db.collection('Fav');
+
 const adultUserCollection = db.collection('AdultUsers');
 const adultStoryCollection = db.collection('AdultStories');
-const adultFavCollection = db.collection('AdultFavs');
-// const promptCollection=db.collection('Prompts');
-// const mqttCollection=db.collection('MqttMessages');
+const adultFavCollection = db.collection('AdultFav');
+const API_URL = 'http://192.168.1.34';
+
+
+function getCollectionByUserType(userType){
+    if(userType==='adult'){
+        return{
+        userCollection: adultUserCollection,
+            storyCollection: adultStoryCollection,
+            FavCollection: adultFavCollection
+        };
+    } else {
+        return {
+            userCollection: userCollection,
+            storyCollection: storyCollection,
+            FavCollection: FavCollection
+        };
+    }
+    };
+
 
 function isValidUsername(username) {
     return /^[a-zA-Z0-9_]{3,}$/.test(username);
@@ -37,6 +55,8 @@ function isValidPassword(password) {
 
 app.get('/signup', async (req, res) => {
     try {
+        const{userType='child'}=req.query;
+        const{userCollection}=getCollectionByUserType(userType);
         const users = await userCollection.find().project({ password: 0 }).toArray();
         res.json(users);
 
@@ -46,7 +66,7 @@ app.get('/signup', async (req, res) => {
 });
 app.post("/signup", async (req, res) => {
     try {
-        const { username, password, age, } = req.body;
+        const { username, password, age, userType = 'child' } = req.body;
         if (!username || !password || age === undefined) {
             return res.status(400).json({ message: "Username, password, and age are required" });
         }
@@ -56,7 +76,7 @@ app.post("/signup", async (req, res) => {
         if (!isValidPassword(password)) {
             return res.status(400).json({ message: "Weak password format" });
         }
-
+        const { userCollection } = getCollectionByUserType(userType);
         const existingUser = await userCollection.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ message: `Username '${username}' already exists` });
@@ -70,14 +90,14 @@ app.post("/signup", async (req, res) => {
         res.status(500).json({ message: "Signup failed", error: error.message });
     }
 });
-
 app.post("/login", async (req, res) => {
     console.log(req.body)
     try {
-        const { username, password } = req.body;
+        const { username, password ,userType='child'} = req.body;
         if (!username || !password) {
             return res.status(400).json({ message: "Username and password are required" })
         }
+        const { userCollection } = getCollectionByUserType(userType);
         const user = await userCollection.findOne({ username });
         if (!user) {
             return res.status(401).json({ message: "Invalid username or password" });
@@ -101,10 +121,11 @@ app.post("/login", async (req, res) => {
 app.post("/story", async (req, res) => {
     console.log(req.body);
     try {
-        const { username, storyText, audioUrl } = req.body;
+        const { username, storyText, audioUrl,userType='child'} = req.body;
         if (!username || !storyText || !audioUrl) {
             return res.status(400).json({ message: "Username, story text, audio URL, imageURL are required" });
         }
+        const{storyCollection}=getCollectionByUserType(userType);
         await storyCollection.insertOne({ username, storyText, audioUrl, createdAt: new Date() });
         res.status(201).json({ message: "Story added successfully" });
     } catch (error) {
@@ -113,7 +134,10 @@ app.post("/story", async (req, res) => {
 });
 app.get("/story", async (req, res) => {
     try {
-        const stories = await storyCollection.find().sort({ createdAt: -1 }).toArray();
+        const {username,userType='child'}=req.query;
+        const { storyCollection } = getCollectionByUserType(userType);
+        const filter=username?{username}:{};
+        const stories = await storyCollection.find(filter).sort({ createdAt: -1 }).toArray();
         res.json(stories);
     } catch (error) {
         res.status(500).json({ message: "Failed to fetch stories", error: error.message });
@@ -121,6 +145,8 @@ app.get("/story", async (req, res) => {
 });
 app.delete("/story", async (req, res) => {
     try {
+        const { userType = 'child' } = req.body;
+        const { storyCollection } = getCollectionByUserType(userType);
         await storyCollection.deleteMany({});
         res.status(200).json({ message: "All stories deleted successfully" });
     } catch (error) {
@@ -129,10 +155,11 @@ app.delete("/story", async (req, res) => {
 });
 app.post("/favorite", async (req, res) => {
     try {
-        const { username, story, isFavorite, audioUrl, category, imageUrl } = req.body;
+        const { username, story, isFavorite, audioUrl, category, imageUrl,userType='child' } = req.body;
         if (!username || !story || typeof isFavorite !== 'boolean' || !audioUrl || !category || !imageUrl) {
             return res.status(400).json({ message: "Username,story,audioUrl,favorite,status,category,favorite_image are required" });
         }
+        const{FavCollection}=getCollectionByUserType(userType);
         await FavCollection.insertOne({ username, story, isFavorite, audioUrl, category, imageUrl, createdAt: new Date() });
         res.status(201).json({ message: "Favorite status updated successfully" });
     } catch (error) {
@@ -142,9 +169,12 @@ app.post("/favorite", async (req, res) => {
 
 app.get("/favorite", async (req, res) => {
     try {
-        const { category } = req.query;
-
+        const { category,username,userType='child  '}=req.query;
+        const {FavCollection}=getCollectionByUserType(userType);
         const filter = { isFavorite: true };
+        if(username){
+            filter.username=username;
+        }
         if (category) {
             filter.category = category;
         }
@@ -163,15 +193,19 @@ app.get("/favorite", async (req, res) => {
 app.delete("/favorite/:id", async (req, res) => {
     try {
         const id = req.params.id;
+        const{userType='child'}=req.query;
+        const{FavCollection}=getCollectionByUserType(userType);
         await FavCollection.deleteOne({ _id: new ObjectId(id) });
+        
         res.status(200).json({ message: "Favorite deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: "Failed to delete favorite", error: error.message });
     }
 });
 app.post('/deduct-credits', async (req, res) => {
-    const { username } = req.body;
+    const { username ,userType='child'} = req.body;
     try {
+        const{userCollection}=getCollectionByUserType(userType);
         let user = await userCollection.findOne({ username });
 
         if (!user) {
@@ -198,11 +232,11 @@ app.post('/deduct-credits', async (req, res) => {
 
 app.get("/get-credits", async (req, res) => {
     try {
-        const { username } = req.query;
+        const { username,userType='child'} = req.query;
         if (!username) {
             return res.status(400).json({ success: false, message: "Username is required" });
         }
-
+        const{userCollection}=getCollectionByUserType(userType);
         let user = await userCollection.findOne({ username });
 
         if (!user) {
@@ -223,12 +257,12 @@ app.get("/get-credits", async (req, res) => {
 
 app.get('/subscription-status', async (req, res) => {
     try {
-        const { username } = req.query;
+        const { username,userType='child'} = req.query;
         
         if (!username) {
             return res.status(400).json({ success: false, message: 'Username is required' });
         }
-
+        const {userCollection}=getCollectionByUserType(userType);
         const user = await userCollection.findOne({ username });
         
         if (!user) {
@@ -255,12 +289,12 @@ app.get('/subscription-status', async (req, res) => {
   
 app.post('/add-credits', async (req, res) => {
     try {
-        const { username, credits, plan, expiryDate } = req.body;
+        const { username, credits, plan, expiryDate,userType='child'} = req.body;
         
         if (!username || !credits) {
             return res.status(400).json({ success: false, message: 'Username and credits are required' });
         }
-        
+        const {userCollection}=getCollectionByUserType(userType);
         const updatedUser = await userCollection.findOneAndUpdate(
             { username },
             { 
@@ -294,150 +328,7 @@ app.post('/add-credits', async (req, res) => {
     }
 });
 
-app.post("/adult/story", async (req, res) => {
-    console.log(req.body);
-    try {
-        const { username, storyText, audioUrl } = req.body;
-        if (!username || !storyText || !audioUrl) {
-            return res.status(400).json({ message: "Missing required fields" });
-        }
-        await adultStoryCollection.insertOne({ username, storyText, audioUrl, createdAt: new Date() });
-        res.status(201).json({ message: "Story added successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Failed to add story", error: error.message });
-    }
-});
-
-app.get("/adult/story", async (req, res) => {
-    try {
-        const stories = await adultStoryCollection.find().sort({ createdAt: -1 }).toArray();
-        res.json(stories);
-    } catch (error) {
-        res.status(500).json({ message: "Failed to fetch stories", error: error.message });
-    }
-});
-
-app.delete("/adult/story", async (req, res) => {
-    try {
-        await adultStoryCollection.deleteMany({});
-        res.json({ message: "All adult stories deleted" });
-    } catch (error) {
-        res.status(500).json({ message: "Failed to delete stories", error: error.message });
-    }
-});
-
-app.post("/adult/favorite", async (req, res) => {
-    console.log("body", req.body)
-
-    try {
-        const { username, story, isFavorite, audioUrl, category, favoriteImage } = req.body;
-        if (!username || !story || typeof isFavorite !== 'boolean' || !audioUrl || !category || !favoriteImage) {
-            return res.status(400).json({ message: "Missing required fields" });
-        }
-
-        await adultFavCollection.insertOne({
-            username, story, isFavorite, audioUrl, category, favoriteImage, createdAt: new Date()
-        });
-        res.status(201).json({ message: "Favorite added" });
-    } catch (error) {
-        res.status(500).json({ message: "Failed to save favorite", error: error.message });
-    }
-});
-app.get("/adult/favorite", async (req, res) => {
-    console.log(req.body);
-    try {
-        const { category } = req.query;
-        const filter = { isFavorite: true };
-        if (category) filter.category = category;
-
-        const favorites = await adultFavCollection.find(filter).sort({ createdAt: -1 }).toArray();
-        res.json(favorites);
-    } catch (error) {
-        res.status(500).json({ message: "Failed to fetch favorites", error: error.message });
-    }
-});
-
-app.delete("/adult/favorite/:id", async (req, res) => {
-    console.log(req.body)
-    try {
-        const { id } = req.params;
-        await adultFavCollection.deleteOne({ _id: new ObjectId(id) });
-        res.json({ message: "Favorite removed" });
-    } catch (error) {
-        res.status(500).json({ message: "Failed to delete favorite", error: error.message });
-    }
-});
-
-
-app.post('/adult/deduct-credits', async (req, res) => {
-    const { username } = req.body;
-    try {
-        let user = await adultUserCollection.findOne({ username });
-
-        if (!user) {
-            user = { username, credits: 100 };
-            await adultUserCollection.insertOne(user);
-        } else if (user.credits === undefined) {
-            user.credits = 100;
-            await adultUserCollection.updateOne({ username }, { $set: { credits: 100 } });
-        }
-
-        if (user.credits >= 20) {
-            const newCredits = user.credits - 20;
-            await adultUserCollection.updateOne({ username }, { $set: { credits: newCredits } });
-            return res.json({ success: true, newCredits });
-        } else {
-            return res.status(400).json({ success: false, message: "Insufficient credits" });
-        }
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Server Error", error: error.message });
-    }
-});
-app.post('/adult/add-credits', async (req, res) => {
-    const { username, credits } = req.body;
-    if (!username || credits === undefined) {
-        return res.status(400).json({ success: false, message: "Username and credits are required" });
-    }
-    try {
-        const user = await adultUserCollection.findOne({ username });
-        if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
-        }
-        const newCredits = (user.credits || 0) + credits;
-
-        await adultUserCollection.updateOne(
-            { username },
-            { $set: { credits: newCredits } }
-        );
-
-        return res.json({ success: true, message: "Credits updated", newCredits });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Server error", error: error.message });
-    }
-});
-
-app.get("/adult/get-credits", async (req, res) => {
-    try {
-        const { username } = req.query;
-        if (!username) {
-            return res.status(400).json({ success: false, message: "Username is required" });
-        }
-        let user = await adultUserCollection.findOne({ username });
-        if (!user) {
-            await adultUserCollection.insertOne({ username, credits: 100 });
-            return res.json({ success: true, credits: 100 });
-        }
-
-        if (user.credits === undefined) {
-            await adultUserCollection.updateOne({ username }, { $set: { credits: 100 } });
-            return res.json({ success: true, credits: 100 });
-        }
-        res.json({ success: true, credits: user.credits });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Internal server error" });
-    }
-});
 
 app.listen(port, '0.0.0.0', () => {
-    console.log(`Server running at http://192.168.1.27:${port}`);
+    console.log(`Server running at ${API_URL}:${port}`);
 });
