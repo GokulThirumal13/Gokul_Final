@@ -19,7 +19,7 @@ export default function ARecentStories() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentAudio, setCurrentAudio] = useState(null);
     const [username, setUsername] = useState('');
-    const API_URL = 'http://192.168.4.75';
+    const API_URL = 'http://192.168.4.55';
     useEffect(() => {
         const fetchUserData = async () => {
             const savedUsername = await AsyncStorage.getItem('username');

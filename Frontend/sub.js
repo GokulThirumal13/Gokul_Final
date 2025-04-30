@@ -33,7 +33,7 @@ const SubscriptionPage = ({ navigation, route }) => {
 
   const checkSubscriptionStatus = async (username) => {
     try {
-      const response = await axios.get(`http://192.168.1.27:3001/subscription-status?username=${username}`);
+      const response = await axios.get(`http://192.168.4.55:3001/subscription-status?username=${username}`);
       if (response.data.success && response.data.subscription) {
         setUserSubscription(response.data.subscription);
         
@@ -69,10 +69,8 @@ const SubscriptionPage = ({ navigation, route }) => {
   const plans = [{id: 'free',name: 'Free',
       price: '₹0',
       period: '',
-      color: '#444',features: [{ text: 'Limited Story Credits', included: true },{ text: 'Basic Stories', included: true },{ text: 'With Ads', included: true },
-        { text: 'Limited Downloads', included: true },
-        { text: 'Premium Stories', included: false },
-        { text: '24/7 Support', included: false },
+      color: '#444',features: [{ text: 'Limited Story Credits', included: true }
+    
       ],
       credits: 20
     },
@@ -84,11 +82,7 @@ const SubscriptionPage = ({ navigation, route }) => {
       color: '#1DB954', 
       features: [
         { text: '250 Story Credits', included: true },
-        { text: 'All Stories', included: true },
-        { text: 'Ad-free Experience', included: true },
-        { text: 'Unlimited Downloads', included: true },
-        { text: 'Offline Mode', included: true },
-        { text: 'Premium Support', included: true },
+        
       ],
       credits: 250
     },
@@ -100,11 +94,7 @@ const SubscriptionPage = ({ navigation, route }) => {
       color: '#6C33C5',
       features: [
         { text: '600 Story Credits', included: true },
-        { text: 'All Stories + Exclusives', included: true },
-        { text: 'Ad-free Experience', included: true },
-        { text: 'Unlimited Downloads', included: true },
-        { text: 'Share with Family', included: true },
-        { text: 'Priority 24/7 Support', included: true },
+        
       ],
       credits: 600
     }
@@ -123,19 +113,19 @@ const SubscriptionPage = ({ navigation, route }) => {
         expiryDate:calculateExpiryDate(2)
       });
 
-      const response = await axios.post('http://192.168.1.27:3001/add-credits', {
+      const response = await axios.post('http://192.168.4.55:3001/add-credits', {
         username,
         credits: selectedPlan.credits,
         plan: selectedPlan.id,
-        expiryDate: calculateExpiryDate(30) 
+        expiryDate: calculateExpiryDate(2) 
       });
       console.log("Subscription response:",response.data);
       if (response.data.success) {
         setUserSubscription({
           plan:selectedPlan.id,
-          expiryDate:calculateExpiryDate(2),
+          expiryDate:response.data.user.subscription.expiryDate,
         });
-        await checkSubscriptionStatus(username);
+    
         Alert.alert('Success', 'Subscription activated successfully!', [
           { text: 'OK', onPress: () => navigation.navigate('pages') }
         ]);
@@ -218,9 +208,21 @@ const SubscriptionPage = ({ navigation, route }) => {
               key={plan.id}
               style={[
                 styles.planCard,
-                selectedPlan?.id === plan.id && { borderColor: plan.color, borderWidth: 2 }
+                selectedPlan?.id === plan.id && { borderColor: plan.color, borderWidth: 2 },
+                userSubscription && {opacity:0.5}
               ]}
-              onPress={() => setSelectedPlan(plan)}
+              onPress={() => {
+                if (!userSubscription){
+                  setSelectedPlan(plan)
+                }
+                else{
+                  Alert.alert(
+                    'Active Subscription',
+                    'You already have an active subscription. Please wait for it to expire or contact support to change plans.',
+                    [{ text: 'OK' }]
+                  );
+                }
+              }}
             >
               <View style={[styles.planHeader, { backgroundColor: plan.color }]}>
                 <Text style={styles.planName}>{plan.name}</Text>
@@ -267,14 +269,16 @@ const SubscriptionPage = ({ navigation, route }) => {
         <TouchableOpacity
           style={[
             styles.subscribeButton,
-            !selectedPlan && styles.disabledButton,
-            selectedPlan && { backgroundColor: selectedPlan.color }
+            (!selectedPlan||userSubscription) && styles.disabledButton,
+            selectedPlan && !userSubscription && { backgroundColor: selectedPlan.color }
           ]}
           onPress={handleSubscribe}
-          disabled={!selectedPlan}
+          disabled={!selectedPlan||userSubscription}
         >
           <Text style={styles.subscribeButtonText}>
-            {selectedPlan ? `GET ${selectedPlan.name.toUpperCase()}` : 'Select a plan'}
+          {userSubscription 
+      ? 'Already Subscribed' :
+            (selectedPlan ? `GET ${selectedPlan.name.toUpperCase()}` : 'Select a plan')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -301,6 +305,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flex: 1,
+    marginTop:30,
     padding: 20,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.4)',

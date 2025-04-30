@@ -28,8 +28,7 @@ const LoginScreen = ({ navigation }) => {
   const [storedEmail, setStoredEmail] = useState('');
   const [storedPhone, setStoredPhone] = useState('');
   const [storedLocation, setStoredLocation] = useState('');
-
-  const API_URL = 'http://192.168.4.75:3001';
+  const API_URL = 'http://192.168.4.55:3001';
 
   useEffect(() => {
     async function fetchStoredData() {s
@@ -68,7 +67,34 @@ const LoginScreen = ({ navigation }) => {
       console.error('Error saving data:', error);
     }
   }
+  async function handleForgotPassword(){
+    if(!email){
+      Alert.alert("Error", "Please enter your email address");
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_URL}/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert(
+          "Password Reset Email Sent", 
+          "If this email is associated with an account, you will receive instructions to reset your password."
+        );
+      } else {
+        Alert.alert("Error", data.message || "Failed to send reset email");
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Network Error', 'Please check your connection and try again');
+    }
+  }
   async function handleLogin() {
     const endpoint = isLogin ? '/login' : '/signup';
   
@@ -105,7 +131,7 @@ const LoginScreen = ({ navigation }) => {
           };
           
           await saveUserData(userDataToSave);
-          navigation.navigate('pages');
+          navigation.navigate('sub');
         } else {
           await saveUserData(userData);
           setIsLogin(true);
@@ -169,7 +195,7 @@ const LoginScreen = ({ navigation }) => {
         value={username}
         onChangeText={setUsername}
       />
-
+    
       <TextInput
         style={styles.input}
         placeholder="Password" 
@@ -223,7 +249,7 @@ const LoginScreen = ({ navigation }) => {
       )}
 
       {isLogin && (
-        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+        <TouchableOpacity onPress={handleForgotPassword}>
           <Text style={styles.forgotPassword}>Forgot Password?</Text>
         </TouchableOpacity>
       )}

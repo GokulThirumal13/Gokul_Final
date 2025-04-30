@@ -36,7 +36,7 @@ export default function NewStoryPrompt() {
 
     const MQTT_BROKER= 'ws://broker.emqx.io:8083/mqtt';
     const MQTT_TOPIC='python/mqtt';
-    const API_URL = 'http://192.168.4.75:3001';
+    const API_URL = 'http://192.168.4.55:3001';
 
 
 
@@ -132,7 +132,7 @@ export default function NewStoryPrompt() {
           
           try {
             MQTT.createClient({
-              uri: 'broker.emqx.io',
+              uri: MQTT_BROKER,
               clientId: `mobile_${Math.random().toString(16).substr(2, 8)}`
             }).then(client => {
               client.on('connect', () => {
@@ -240,7 +240,7 @@ export default function NewStoryPrompt() {
             });
             
             console.log('Sending audio for transcription...');
-            const response = await fetch(`${API_URL}/transcribe`, {
+            const response = await fetch(`http://192.168.4.55:3000/transcribe`, {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -311,7 +311,7 @@ export default function NewStoryPrompt() {
         setLoading(true);
         const ageAdjustedPrompt = `Generate a story suitable for a ${age}-year-old in the category '${category}' and write the story in ${lang}. User prompt: ${prompt}.`;
         try {
-            const response = await fetch('http://192.168.4.75:3000/generate-story', {
+            const response = await fetch('http://192.168.4.55:3000/generate-story', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt:ageAdjustedPrompt, category, voiceId, lang }),

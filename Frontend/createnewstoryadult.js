@@ -47,7 +47,7 @@ export default function NewStoryPromptAdults() {
     const {category, voiceId, lang} = route.params || {};
 
     const USER_TYPE = 'adult';
-    const API_URL = 'http://192.168.4.75:3001';
+    const API_URL = 'http://192.168.4.55:3001';
 
     useEffect(() => {
         const setupAudio = async () => {
@@ -211,7 +211,7 @@ export default function NewStoryPromptAdults() {
             formData.append('userType', USER_TYPE);
             
             console.log('Sending audio for transcription...');
-            const response = await fetch(`${API_URL}/transcribe`, {
+            const response = await fetch(`http://192.168.4.55:3000/transcribe`, {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -284,7 +284,7 @@ export default function NewStoryPromptAdults() {
         setLoading(true);
         const ageAdjustedPrompt = `Generate a story suitable for an adult in the category '${category}' and write the story in ${lang}. User prompt: ${prompt}.`;
         try {
-            const response = await fetch('http://192.168.4.75:3000/generate-story', {
+            const response = await fetch('http://192.168.4.55:3000/generate-story', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

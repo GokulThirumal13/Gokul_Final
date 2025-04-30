@@ -22,7 +22,7 @@ export default function RecentStories() {
         if(!username) return;
         const fetchStories = async () => {
             try {
-                const response = await fetch(`http://192.168.4.75:3001/story?username=${username}`);
+                const response = await fetch(`http://192.168.4.55:3001/story?username=${username}`);
                 if (!response.ok) throw new Error('Failed to fetch stories');
                 const data = await response.json();
                 setStories(data);
@@ -75,7 +75,7 @@ export default function RecentStories() {
 
     const clearAllStories = async () => {
         try {
-            const response = await fetch('http://192.168.4.75:3001/story', {
+            const response = await fetch('http://192.168.4.55:3001/story', {
                 method: 'DELETE',
             });
             if (!response.ok) throw new Error('Failed to delete stories');

@@ -8,14 +8,11 @@ import { StatusBar } from "expo-status-bar";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import ARecentStories from "./ARecent";
 import AdultFavoriteStories from "./Afav";
-
 const AdultsHomeScreen = ({ navigation }) => {
   const [currentTab, setCurrentTab] = useState("Home");
-
   const switchTab = (tab) => {
     setCurrentTab(tab);
   };
-
   const swipeGesture = Gesture.Pan()
     .runOnJS(true)  
     .minDistance(50) 
@@ -24,8 +21,7 @@ const AdultsHomeScreen = ({ navigation }) => {
     })
     .onEnd((event) => {
       if (event.translationY < -30) {
-        console.log('Upward swipe detected, navigating to kids section');
-        
+        console.log('Upward swipe detected, navigating to kids section');    
         requestAnimationFrame(() => {
           try {
             navigation.navigate("khome");
@@ -37,7 +33,6 @@ const AdultsHomeScreen = ({ navigation }) => {
     })
     .simultaneousWithExternalGesture()  
     .activeOffsetY(-10);  
-
   const renderProfileIcon = () => {
     return (
       <View style={styles.profileContainer}>
@@ -46,7 +41,6 @@ const AdultsHomeScreen = ({ navigation }) => {
       </View>
     );
   };
-
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor="#0E0E0E" />
@@ -95,40 +89,13 @@ const AdultsHomeScreen = ({ navigation }) => {
             <Text style={styles.sectionTitle}>
               {currentTab === "Recent" ? "Recently Played" : 
                currentTab === "Favorites" ? "Favorite Stories" :
-               currentTab === "MQTT" ? "MQTT Connection" :
                currentTab === "Home" ? "Featured Stories" : "Welcome Home"}
             </Text>
           </View>
 
           {currentTab === "Favorites" && <AdultFavoriteStories />}
           {currentTab === "Recent" && <ARecentStories />}
-          {currentTab === "MQTT" && (
-            <View style={styles.mqttContent}>
-              <Text style={styles.mqttTitle}>MQTT Connection Status</Text>
-              <View style={styles.mqttStatusContainer}>
-                <View style={[styles.statusIndicator, { backgroundColor: '#FF6347' }]} />
-                <Text style={styles.mqttStatusText}>Disconnected</Text>
-              </View>
-              <TouchableOpacity style={styles.mqttConnectButton}>
-                <Text style={styles.mqttConnectText}>Connect</Text>
-              </TouchableOpacity>
-              <View style={styles.mqttInfoContainer}>
-                <Text style={styles.mqttInfoTitle}>Connection Info</Text>
-                <View style={styles.mqttInfoRow}>
-                  <Text style={styles.mqttInfoLabel}>Broker:</Text>
-                  <Text style={styles.mqttInfoValue}>mqtt.example.com</Text>
-                </View>
-                <View style={styles.mqttInfoRow}>
-                  <Text style={styles.mqttInfoLabel}>Port:</Text>
-                  <Text style={styles.mqttInfoValue}>1883</Text>
-                </View>
-                <View style={styles.mqttInfoRow}>
-                  <Text style={styles.mqttInfoLabel}>Topic:</Text>
-                  <Text style={styles.mqttInfoValue}>/storytime/adults/updates</Text>
-                </View>
-              </View>
-            </View>
-          )}
+          
           
           {currentTab === "Home" && (
             <View style={styles.homeContent}>
@@ -165,7 +132,7 @@ const AdultsHomeScreen = ({ navigation }) => {
             { name: "Home", icon: "home-outline", activeIcon: "home" },
             { name: "Favorites", icon: "heart-outline", activeIcon: "heart" },
             { name: "Recent", icon: "time-outline", activeIcon: "time" },
-            { name: "MQTT", icon: "wifi-outline", activeIcon: "wifi" }
+            
           ].map((tab) => (
             <TouchableOpacity
               key={tab.name}

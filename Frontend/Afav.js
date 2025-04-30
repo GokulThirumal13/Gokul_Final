@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CARD_WIDTH = (Dimensions.get("window").width - 60) / 2;
 const PRIMARY_COLOR = "#2D3748"; 
-const API_URL = "http://192.168.4.75";
+const API_URL = "http://192.168.4.55";
 
 export default function AdultFavoriteStories() {
   const [favoriteStories, setFavoriteStories] = useState([]);

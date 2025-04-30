@@ -73,7 +73,7 @@ const AdultsSection = ({ navigation }) => {
 
   const [favoriteStories,setFavoriteStories]=useState([]);
 
-  const API_URL = 'http://192.168.4.75:3001';
+  const API_URL = 'http://192.168.4.55:3001';
 
   useEffect(() => {
     async function fetchData() {

@@ -107,7 +107,7 @@ const KidsSection = ({ navigation }) => {
 
       try {
         const response = await fetch(
-          `http://192.168.4.75:3001/favorite?category=${selectedCategory}`
+          `http://192.168.4.55:3001/favorite?category=${selectedCategory}`
         );
         const data = await response.json();
         setFavoriteStories(data);

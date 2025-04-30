@@ -29,7 +29,7 @@ export default function FavoriteStories() {
     if(!username) return;
 
     try {
-      const response = await fetch(`http://192.168.4.75:3001/favorite?username=${username}&userType=child`);
+      const response = await fetch(`http://192.168.4.55:3001/favorite?username=${username}&userType=child`);
       if (!response.ok) throw new Error("Failed to fetch favorite stories");
       const data = await response.json();
       setFavoriteStories(data);
@@ -118,7 +118,7 @@ export default function FavoriteStories() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`http://192.168.4.75:3001/favorite/${id}`, {
+              const response = await fetch(`http://192.168.4.55:3001/favorite/${id}`, {
                 method: "DELETE",
               });
               if (!response.ok) throw new Error("Delete failed");

@@ -19,7 +19,7 @@ const KidsHomeScreen = ({ navigation }) => {
   const switchTab = (tab) => {
     setCurrentTab(tab);
   };
-  const API_URL='http://192.168.4.75'
+  const API_URL='http://192.168.4.55'
 
   const swipeGesture = Gesture.Pan()
     .runOnJS(true)  
@@ -94,7 +94,7 @@ const KidsHomeScreen = ({ navigation }) => {
             <Text style={styles.sectionTitle}>
               {currentTab === "Recent" ? "Recently Played" : 
                currentTab === "Favorites" ? "Favorite Stories" :
-               currentTab === "MQTT" ? "MQTT Connection" :
+      
                "Welcome Home"}
             </Text>
           </View>
@@ -109,33 +109,7 @@ const KidsHomeScreen = ({ navigation }) => {
           )}
           {currentTab === "Favorites" && <FavoriteStories/>}
           {currentTab === "Recent" && <RecentStories/>}
-          {currentTab === "MQTT" && (
-            <View style={styles.mqttContent}>
-              <Text style={styles.mqttTitle}>MQTT Connection Status</Text>
-              <View style={styles.mqttStatusContainer}>
-                <View style={[styles.statusIndicator, { backgroundColor: '#FF6347' }]} />
-                <Text style={styles.mqttStatusText}>Disconnected</Text>
-              </View>
-              <TouchableOpacity style={styles.mqttConnectButton}>
-                <Text style={styles.mqttConnectText}>Connect</Text>
-              </TouchableOpacity>
-              <View style={styles.mqttInfoContainer}>
-                <Text style={styles.mqttInfoTitle}>Connection Info</Text>
-                <View style={styles.mqttInfoRow}>
-                  <Text style={styles.mqttInfoLabel}>Broker:</Text>
-                  <Text style={styles.mqttInfoValue}>mqtt.example.com</Text>
-                </View>
-                <View style={styles.mqttInfoRow}>
-                  <Text style={styles.mqttInfoLabel}>Port:</Text>
-                  <Text style={styles.mqttInfoValue}>1883</Text>
-                </View>
-                <View style={styles.mqttInfoRow}>
-                  <Text style={styles.mqttInfoLabel}>Topic:</Text>
-                  <Text style={styles.mqttInfoValue}>/storytime/kids/updates</Text>
-                </View>
-              </View>
-            </View>
-          )}
+          
           
           <View style={styles.createSection}>
             <LinearGradient
@@ -160,7 +134,7 @@ const KidsHomeScreen = ({ navigation }) => {
             { name: "Home", icon: "home-outline", activeIcon: "home" },
             { name: "Favorites", icon: "heart-outline", activeIcon: "heart" },
             { name: "Recent", icon: "time-outline", activeIcon: "time" },
-            { name: "MQTT", icon: "wifi-outline", activeIcon: "wifi" }
+           
           ].map((tab) => (
             <TouchableOpacity
               key={tab.name}
