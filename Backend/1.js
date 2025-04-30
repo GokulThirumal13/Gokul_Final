@@ -6,19 +6,19 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const mqtt=require('mqtt');
-const mqttClient=mqtt.connect('mqtt://127.0.0.1:1883');
+const mqttClient=mqtt.connect('mqtt://broker.emqx.io');
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-
+const ngrok_url=process.env.ngrok_url||'https://gar-on-midge.ngrok-free.app'
+const GROQ = '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';
+const ELEVENLABS = 'sk_519502be5bf2b52e8d2e6fdea46d676c02a656084df82c2b';
+const LLAMAMODEL = 'llama-3.1-8b-instant';
+const groq = new Groq({ apiKey: GROQ });
 mqttClient.on('connect',()=>{
     console.log('Connected to MQTT broker');
 })
-const GROQ = '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';
-const ELEVENLABS = 'sk_ca9cc4b3e916a322d9d1638b354cd55a3eafcebf02c69905';
-const LLAMAMODEL = 'llama-3.1-8b-instant';
-const groq = new Groq({ apiKey: GROQ });
 
 const audioDir = path.join(__dirname, 'audio');
 const imageDir = path.join(__dirname, 'images');
@@ -27,7 +27,6 @@ const uploadsDir = path.join(__dirname, 'uploads');
 [audioDir, imageDir, uploadsDir].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
-
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadsDir);
@@ -42,17 +41,22 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } 
 });
 
+function getAudioUrl(filename){
+    return `${ngrok_url}/audio/${filename}`;
+}
+
+function getImageUrl(filename){
+    return `${ngrok_url}/images/${filename}`;
+}
+
 app.post('/transcribe', upload.single('audio'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No audio file uploaded' });
         }
-
         const filePath = req.file.path;
-        
         console.log(`Processing audio file at ${filePath}`);
         const fileStream = fs.createReadStream(filePath);
-        
         const transcription = await groq.audio.transcriptions.create({
             file: fileStream,
             model: "whisper-large-v3",
@@ -205,7 +209,7 @@ async function convertTextToSpeech(text, filename, voiceId) {
         const audioBuffer = await response.arrayBuffer();
         const filePath = path.join(audioDir, filename);
         fs.writeFileSync(filePath, Buffer.from(audioBuffer));
-        return `https://72fe-115-99-80-133.ngrok-free.app/audio/${filename}`;
+        return getAudioUrl(filename);
     } catch (error) {
         console.error('Error in convertTextToSpeech:', error);
         return null;
@@ -226,12 +230,13 @@ async function generateImageFromText(promptText) {
             throw new Error(`Image generation failed: ${response.statusText}`);
         }
 
-        const buffer = await response.buffer();
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
         const filename = `image_${Date.now()}.jpg`;
         const filePath = path.join(imageDir, filename);
         fs.writeFileSync(filePath, buffer);
 
-        return `https://72fe-115-99-80-133.ngrok-free.app/images/${filename}`;
+        return getImageUrl(filename);
     } catch (err) {
         console.error("Image generation error:", err);
         return null;
@@ -256,8 +261,9 @@ app.get('/images/:filename', (req, res) => {
     res.sendFile(filePath);
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT||8084;
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Public URL: ${ngrok_url}`);
 });
